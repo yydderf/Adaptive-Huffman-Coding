@@ -32,7 +32,6 @@ if (NOT ${spdlog_FOUND})
     message(STATUS "${Yellow}spdlog not found, fetching source${ColorReset}")
 
     ExternalProject_Add(spdlog
-        PREFIX          spdlog
         GIT_REPOSITORY  https://github.com/gabime/spdlog.git
         GIT_TAG         v1.15.1
         UPDATE_COMMAND  ""
@@ -45,10 +44,11 @@ if (NOT ${spdlog_FOUND})
             -DCMAKE_INSTALL_PREFIX=${DEPS_INSTALL_PREFIX}
             -DBUILD_SHARED_LIBS=ON
     )
-    set(SPDLOG_LIBRARIES "${DEPS_INSTALL_PREFIX}/lib/libspdlog${CMAKE_SHARED_LIBRARY_SUFFIX}")
-    set(SPDLOG_INCLUDE_DIRS "${DEPS_INSTALL_PREFIX}/include/spdlog")
-    set(spdlog_FOUND TRUE)
-    set(SPDLOG_TARGET spdlog)
+    add_library(spdlog_interface INTERFACE)
+    add_dependencies(spdlog_interface spdlog)
+    target_include_directories(spdlog_interface INTERFACE "${DEPS_INSTALL_PREFIX}/include")
+    target_link_directories(spdlog_interface INTERFACE "${DEPS_INSTALL_PREFIX}/lib")
+    add_library(spdlog::spdlog ALIAS spdlog_interface)
 endif()
 
 add_executable(huffman
@@ -59,32 +59,16 @@ add_executable(adaptive_huffman
     src/adaptive_huffman.cpp
 )
 
-# add_dependencies(huffman
-#     spdlog
-# )
-# 
-# add_dependencies(adaptive_huffman
-#     spdlog
-# )
-
-# target_include_directories(huffman
-#     PRIVATE ${SPDLOG_INCLUDE_DIRS}
-# )
-
 target_link_libraries(huffman
     PRIVATE spdlog::spdlog
 )
-
-# target_include_directories(adaptive_huffman
-#     PRIVATE ${SPDLOG_INCLUDE_DIRS}
-# )
 
 target_link_libraries(adaptive_huffman
     PRIVATE spdlog::spdlog
 )
 
-# target_link_libraries(huffman PRIVATE spdlog::spdlog_header_only)
-# target_link_libraries(adaptive_huffman PRIVATE spdlog::spdlog_header_only)
+add_dependencies(huffman spdlog::spdlog)
+add_dependencies(adaptive_huffman spdlog::spdlog)
 
 # include(FetchContent)
 # FetchContent_Declare(
