@@ -54,11 +54,15 @@ endif()
 add_executable(huffman
     src/huffman.cpp
     src/argparse.cpp
+    src/dataloader.cpp
+    src/coder.cpp
 )
 
 add_executable(adaptive_huffman
     src/adaptive_huffman.cpp
     src/argparse.cpp
+    src/dataloader.cpp
+    src/coder.cpp
 )
 
 target_link_libraries(huffman

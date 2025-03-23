@@ -28,6 +28,12 @@ Arguments::Arguments(int argc, char **argv)
                 this->verbose = true;
                 spdlog::set_level(spdlog::level::debug);
                 break;
+            case 'b':
+                this->bits = std::atoi(optarg);
+                break;
+            case 'd':
+                // toggle for decode mode
+                break;
             default:
                 usage(argv[0]);
         }
@@ -39,7 +45,4 @@ Arguments::Arguments(int argc, char **argv)
 
     spdlog::debug("read from: {}", this->ifname);
     spdlog::debug("output to: {}", this->ofname);
-
-    this->ifs.open(this->ifname, std::fstream::in);
-    this->ofs.open(this->ofname, std::fstream::out);
 }
