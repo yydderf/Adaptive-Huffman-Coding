@@ -10,3 +10,13 @@ Coder::Coder(DataLoader *dl, int bits, const char *ofname)
     this->dl = dl;
     this->bits = bits;
 }
+
+int Coder::proc()
+{
+    while (!this->dl->eof()) {
+        // read the populated data from data loader
+        std::unique_ptr<RawBlock> raw_block = this->dl->next();
+        spdlog::debug("raw block size: {}", raw_block->size);
+    }
+    return 0;
+}

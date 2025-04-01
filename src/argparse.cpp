@@ -16,7 +16,7 @@ void usage(const char *name)
 Arguments::Arguments(int argc, char **argv)
 {
     int opt;
-    while ((opt = getopt(argc, argv, "i:o:v")) != -1) {
+    while ((opt = getopt(argc, argv, "i:o:b:dv")) != -1) {
         switch (opt) {
             case 'i':
                 this->ifname = optarg;

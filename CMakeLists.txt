@@ -76,18 +76,23 @@ target_link_libraries(adaptive_huffman
 add_dependencies(huffman spdlog::spdlog)
 add_dependencies(adaptive_huffman spdlog::spdlog)
 
-# include(FetchContent)
-# FetchContent_Declare(
-#     googletest
-#     GIT_REPOSITORY  https://github.com/google/googletest.git
-#     GIT_TAG         2ae29b52fdff88c52fef655fa0d245fc514ca35b
-# )
-# 
-# set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-# FetchContent_MakeAvailable(googletest)
-# 
-# enable_testing()
- 
+include(FetchContent)
+FetchContent_Declare(
+    googletest
+    GIT_REPOSITORY  https://github.com/google/googletest.git
+    GIT_TAG         2ae29b52fdff88c52fef655fa0d245fc514ca35b
+)
+
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
+
+enable_testing()
+
+add_executable(tree_test
+    tests/tree_test.cpp
+    src/tree.cpp
+)
+
 # add_executable(misc_test
 #     tests/misc_test.cpp
 #     src/misc.cpp
@@ -95,13 +100,13 @@ add_dependencies(adaptive_huffman spdlog::spdlog)
 # add_dependencies(misc_test
 #     Armadillo
 # )
-# target_link_libraries(misc_test
-#     GTest::gtest_main
-# )
+target_link_libraries(tree_test
+    GTest::gtest_main
+)
 # target_include_directories(misc_test
 #     PRIVATE ${ARMADILLO_INCLUDE_DIRS}
 # )
 # 
-# include(GoogleTest)
-# gtest_discover_tests(misc_test)
-# 
+include(GoogleTest)
+gtest_discover_tests(tree_test)
+
