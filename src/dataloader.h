@@ -1,9 +1,12 @@
 #ifndef _DATALOADER_H
 #define _DATALOADER_H
 
-#include <fstream>
 #include <unordered_map>
+#include <fstream>
+#include <cstdint>
 #include <memory>
+
+#define DEFAULT_BUF_SIZE 1024
 
 enum DL_MODE {
     READ_BLOCK = 1L << 0,
@@ -14,7 +17,7 @@ enum DL_MODE {
 
 struct RawBlock {
     uint8_t tag; // header or data
-    std::size_t size; // size of block
+    size_t size; // size of block
     std::vector<uint8_t> raw_bytes; // raw data
     std::unordered_map<uint32_t, size_t> freq_map;
 };
@@ -25,11 +28,16 @@ public:
     bool ok();
     bool eof();
     std::unique_ptr<RawBlock> next();
+
+    // populate nbytes
+    std::vector<char> *get(ssize_t nbytes, std::streamsize *read_bytes);
 private:
     std::ifstream ifs;
-    std::size_t read_block_size = 1024;
-    std::size_t freq_block_size = 1024;
-    std::size_t file_size = 0;
+    std::vector<char> buf;
+    size_t read_block_size = 1024;
+    size_t freq_block_size = 1024;
+    size_t file_size = 0;
+    ssize_t buf_size = DEFAULT_BUF_SIZE;
     int _mode;
     int _bits;
     bool _ok = true;

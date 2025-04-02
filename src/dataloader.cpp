@@ -13,6 +13,7 @@ DataLoader::DataLoader(const char *ifname, int bits, int mode)
 
     this->_mode = mode;
     this->_bits = bits;
+    this->buf.resize(this->buf_size);
 
     this->ifs.seekg(0, this->ifs.end);
     this->file_size = this->ifs.tellg();
@@ -28,6 +29,46 @@ bool DataLoader::ok()
 bool DataLoader::eof()
 {
     return this->_eof;
+}
+
+std::vector<char> *DataLoader::get(ssize_t nbytes, std::streamsize *read_bytes)
+{
+    // return a pointer to n raw bytes
+    // 1. allocate n bytes of buf
+    // 2. read data from file to buf
+    // 3. return the pointer to buf
+    // TODO
+    // 1. read more size to reduce I/O frequency
+    if (this->_eof == true) {
+        spdlog::warn("No more data to be read");
+        return nullptr;
+    }
+
+    // allocate more space for vector
+    if (nbytes > this->buf_size) {
+        ssize_t tmp_size = this->buf_size;
+        while (nbytes > tmp_size) {
+            tmp_size *= 2;
+        }
+        try {
+            this->buf.resize(tmp_size);
+            this->buf_size = tmp_size;
+        } catch (std::bad_alloc const &) {
+            spdlog::error("Not enough memory, try smaller size");
+            return nullptr;
+        }
+    }
+    
+    this->ifs.read(this->buf.data(), nbytes);
+    *read_bytes = this->ifs.gcount();
+
+    if (*read_bytes == nbytes) {
+        spdlog::debug("Read {} bytes from file", nbytes);
+    } else {
+        spdlog::debug("Not enough data in file, only read {} bytes from file", *read_bytes);
+    }
+
+    return &(this->buf);
 }
 
 // populate raw block

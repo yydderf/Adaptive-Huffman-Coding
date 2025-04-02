@@ -88,25 +88,36 @@ FetchContent_MakeAvailable(googletest)
 
 enable_testing()
 
-add_executable(tree_test
-    tests/tree_test.cpp
-    src/tree.cpp
+add_executable(node_test
+    tests/node_test.cpp
+    src/node.cpp
 )
 
-# add_executable(misc_test
-#     tests/misc_test.cpp
-#     src/misc.cpp
-# )
-# add_dependencies(misc_test
-#     Armadillo
-# )
+add_executable(tree_test
+    tests/tree_test.cpp
+    src/dataloader.cpp
+    src/node.cpp
+    src/tree.cpp
+)
+add_executable(dataloader_test
+    tests/dataloader_test.cpp
+    src/dataloader.cpp
+)
+
+# for #include <gtest/gtest.h>
+target_link_libraries(node_test
+    GTest::gtest_main
+    spdlog::spdlog
+)
 target_link_libraries(tree_test
     GTest::gtest_main
+    spdlog::spdlog
 )
-# target_include_directories(misc_test
-#     PRIVATE ${ARMADILLO_INCLUDE_DIRS}
-# )
-# 
+target_link_libraries(dataloader_test
+    GTest::gtest_main
+    spdlog::spdlog
+)
+
 include(GoogleTest)
 gtest_discover_tests(tree_test)
 
