@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.18)
+
 project(Information_Theory_Adaptive_Huffman CXX)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -28,6 +29,11 @@ include(ExternalProject)
 
 find_package(spdlog QUIET)
 
+if(POLICY CMP0167)
+  cmake_policy(SET CMP0167 NEW)
+endif()
+find_package(Boost QUIET)
+
 if (NOT ${spdlog_FOUND})
     message(STATUS "${Yellow}spdlog not found, fetching source${ColorReset}")
 
@@ -49,6 +55,30 @@ if (NOT ${spdlog_FOUND})
     target_include_directories(spdlog_interface INTERFACE "${DEPS_INSTALL_PREFIX}/include")
     target_link_directories(spdlog_interface INTERFACE "${DEPS_INSTALL_PREFIX}/lib")
     add_library(spdlog::spdlog ALIAS spdlog_interface)
+endif()
+
+if (NOT ${Boost_FOUND})
+    message(STATUS "${Yellow}boost library not found, fetching source${ColorReset}")
+
+    ExternalProject_Add(Boost
+        GIT_REPOSITORY  https://github.com/boostorg/boost.git
+        GIT_TAG         boost-1.87.0
+        UPDATE_COMMAND  ""
+        PREFIX          ${DEPS_PREFIX}
+        CMAKE_ARGS      
+            -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+            -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
+            -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
+            -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
+            -DCMAKE_INSTALL_PREFIX=${DEPS_INSTALL_PREFIX}
+            -DBUILD_SHARED_LIBS=ON
+    )
+
+    add_library(boost_interface INTERFACE)
+    add_dependencies(boost_interface Boost)
+    target_include_directories(boost_interface INTERFACE "${DEPS_INSTALL_PREFIX}/include")
+    target_link_directories(boost_interface INTERFACE "${DEPS_INSTALL_PREFIX}/lib")
+    add_library(Boost::boost ALIAS boost_interface)
 endif()
 
 add_executable(huffman
@@ -73,8 +103,8 @@ target_link_libraries(adaptive_huffman
     PRIVATE spdlog::spdlog
 )
 
-add_dependencies(huffman spdlog::spdlog)
-add_dependencies(adaptive_huffman spdlog::spdlog)
+add_dependencies(huffman spdlog::spdlog Boost::boost)
+add_dependencies(adaptive_huffman spdlog::spdlog Boost::boost)
 
 include(FetchContent)
 FetchContent_Declare(
@@ -107,10 +137,12 @@ add_executable(dataloader_test
 # for #include <gtest/gtest.h>
 target_link_libraries(node_test
     GTest::gtest_main
+    Boost::boost
     spdlog::spdlog
 )
 target_link_libraries(tree_test
     GTest::gtest_main
+    Boost::boost
     spdlog::spdlog
 )
 target_link_libraries(dataloader_test
