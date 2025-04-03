@@ -29,7 +29,8 @@ TEST(TreeUpdateTest, BasicAssertions)
     std::streamsize read_bytes;
     std::vector<char> *data = dataloader.get(32, &read_bytes);
     for (int i = 0; i < read_bytes; ++i) {
-        tree.update(static_cast<uint32_t>((*data)[i]));
+        Node *curr_node = tree.search(static_cast<uint32_t>((*data)[i]));
+        tree.update(curr_node, static_cast<uint32_t>((*data)[i]));
         spdlog::debug("---------------final----------------------");
         tree.display();
         spdlog::debug("------------------------------------------");

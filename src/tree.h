@@ -22,7 +22,7 @@ public:
     Tree();
     Tree(uint32_t _symbol_size);
     ~Tree();
-    void update(uint32_t symbol);
+    void update(Node *curr_node, uint32_t symbol);
     void _info(uint32_t *_symbol_size, Node **root);
     void _get_queue(Node *node, std::queue<std::pair<Node *, int>> *rq);
     void display();

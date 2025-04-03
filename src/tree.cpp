@@ -41,11 +41,9 @@ Tree::~Tree()
     }
 }
 
-void Tree::update(uint32_t symbol)
+void Tree::update(Node *curr_node, uint32_t symbol)
 {
     // check if the symbol had appeared before
-    spdlog::debug("symbol: {}", symbol);
-    Node *curr_node = this->search(symbol);
     // - NYT gives birth to new NYT and external node
     // - increment weight of the external node and old NYT
     // - to old NYT
@@ -216,6 +214,7 @@ Node *Tree::search(uint32_t symbol)
 {
     // use unordered map to get search for symbol in O(1)
     // otherwise each update is at least O(N)
+    spdlog::debug("symbol: {}", symbol);
     auto it = this->symbol_map.find(symbol);
     return (it != this->symbol_map.end()) ? it->second : nullptr;
 }
