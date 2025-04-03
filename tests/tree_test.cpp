@@ -21,6 +21,7 @@ TEST(TreeInitTest, BasicAssertions)
 
 TEST(TreeUpdateTest, BasicAssertions)
 {
+    spdlog::set_level(spdlog::level::debug);
     Tree tree(26);
     const char *fname = "../res/mock_data";
     DataLoader dataloader(fname, 8, READ_ONCE | MODE_ENC);
@@ -29,7 +30,8 @@ TEST(TreeUpdateTest, BasicAssertions)
     std::vector<char> *data = dataloader.get(32, &read_bytes);
     for (int i = 0; i < read_bytes; ++i) {
         tree.update(static_cast<uint32_t>((*data)[i]));
+        spdlog::debug("---------------final----------------------");
         tree.display();
-        spdlog::info("------------------------------------------");
+        spdlog::debug("------------------------------------------");
     }
 }

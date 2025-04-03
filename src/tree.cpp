@@ -1,7 +1,10 @@
+#include <boost/dynamic_bitset.hpp>
 #include <spdlog/spdlog.h>
 #include <unordered_map>
+#include <sstream>
 #include <cstdint>
 #include <queue>
+#include <set>
 
 #include <cstdio>
 
@@ -11,7 +14,6 @@
 Tree::Tree() :
     symbol_size(256),
     symbol_trans(0),
-    NYT(boost::dynamic_bitset<>(0)),
     root(new Node(256 * 2 - 1))
 {
     this->node_NYT = root;
@@ -20,7 +22,6 @@ Tree::Tree() :
 Tree::Tree(uint32_t _symbol_size) :
     symbol_size(_symbol_size),
     symbol_trans(0),
-    NYT(boost::dynamic_bitset<>(0)),
     root(new Node(_symbol_size * 2 - 1))
 {
     this->node_NYT = root;
@@ -30,7 +31,8 @@ Tree::~Tree()
 {
     // free all the nodes in the tree
     // including root and node_NYT
-    std::queue<std::pair<Node*, int>> q = this->_get_queue(this->root);
+    std::queue<std::pair<Node*, int>> q;
+    this->_get_queue(this->root, &q);
     std::pair<Node*, int> curr_pair;
     while (!q.empty()) {
         curr_pair = q.front();
@@ -42,6 +44,7 @@ Tree::~Tree()
 void Tree::update(uint32_t symbol)
 {
     // check if the symbol had appeared before
+    spdlog::debug("symbol: {}", symbol);
     Node *curr_node = this->search(symbol);
     // - NYT gives birth to new NYT and external node
     // - increment weight of the external node and old NYT
@@ -55,7 +58,9 @@ void Tree::update(uint32_t symbol)
         new_symbol->weight += 1;
 
         // update table
-        symbol_map[symbol] = new_symbol;
+        this->symbol_map[symbol] = new_symbol;
+        this->block_map[this->node_NYT->weight].insert(this->node_NYT);
+        this->block_map[new_symbol->weight].insert(new_symbol);
 
         // set new NYT as node NYT
         curr_node = this->node_NYT;
@@ -65,15 +70,34 @@ void Tree::update(uint32_t symbol)
     } else {
         // node number max in block
         this->_switch(curr_node);
+        this->_remove_from_set(curr_node);
         curr_node->weight += 1;
+        this->block_map[curr_node->weight].insert(curr_node);
     }
 
     while (curr_node != this->root) {
         // * check if the current node is root
         // * go to parent node
+        spdlog::debug("from {} to its parent {}", curr_node->id, curr_node->parent->id);
         curr_node = curr_node->parent;
         this->_switch(curr_node);
+        this->_remove_from_set(curr_node);
         curr_node->weight += 1;
+        this->block_map[curr_node->weight].insert(curr_node);
+    }
+    this->_get_queue(this->root, nullptr);
+}
+
+void Tree::_remove_from_set(Node *target_node)
+{
+    auto nit = std::find_if(
+            this->block_map[target_node->weight].begin(),
+            this->block_map[target_node->weight].end(),
+            [target_id = target_node->id](const Node * n) {
+                return n->id == target_id;
+            });
+    if (nit != this->block_map[target_node->weight].end()) {
+        this->block_map[target_node->weight].erase(nit);
     }
 }
 
@@ -86,11 +110,13 @@ void Tree::_switch(Node *node)
     // 2.3 - reconstruction might not be required
     //       the representation of each node does
     //       tie with the node number (id)
+    spdlog::debug("_switch - id: {}", node->id);
+    spdlog::debug("finding the largest node number of weight: {}", node->weight);
     auto it = this->block_map.find(node->weight);
     // 1. no nodes with the weight have registered
-    if (it != this->block_map.end()) {
-        this->block_map[node->weight] = std::vector<Node*>();
-        this->block_map[node->weight].push_back(node);
+    if (it == this->block_map.end()) {
+        this->block_map[node->weight] = std::set<Node*, NodeAscComp>();
+        this->block_map[node->weight].insert(node);
     } else {
         // get max_id, switch node with max_id node
         // remove node from old_weight container
@@ -99,32 +125,14 @@ void Tree::_switch(Node *node)
         // std::priority_queue fetch in O(log(N)), remove in O(?)
         // 2. target weight has been registered, node != max_id
         // 3. target weight has been registered, node == max_id
-        // Node *max_node = node;
-        // for (int i = 0; i < it->second.size(); ++i) {
-        //     if (it->second[i]->id > max_node->id && it->second[i] == node->parent) {
-        //         max_node = it->second[i];
-        //     }
-        // }
-        // if (max_node != node) {
-        //     auto tmp_node = max_node;
-        //     auto tmp_parent = max_node->parent;
-        //     auto tmp_id = max_node->id;
-        //     auto tmp_NYT = max_node->NYT;
-        //     auto tmp_repr = max_node->repr;
-
-        //     max_node = node;
-        //     max_node->id = tmp_id;
-        //     max_node->parent = tmp_parent;
-        //     max_node->NYT = tmp_NYT;
-        //     max_node->repr = tmp_repr;
-
-        //     node = tmp_node;
-        // }
+        auto rit = it->second.rbegin();
+        if (*rit == node->parent) {
+            rit = std::next(rit);
+        }
+        Node *max_node = *rit;
+        spdlog::debug("max node id: {}", max_node->id);
+        this->swap(node, max_node);
     }
-    
-    // if (it != this->block_map.end() && it->second != node) {
-    // }
-    // this->block_map[node->weight] = node;
 }
 
 void Tree::_info(uint32_t *symbol_size, Node **root)
@@ -133,29 +141,34 @@ void Tree::_info(uint32_t *symbol_size, Node **root)
     *root = this->root;
 }
 
-std::queue<std::pair<Node*, int>> Tree::_get_queue(Node *node)
+void Tree::_get_queue(Node *node, std::queue<std::pair<Node *, int>> *rq)
 {
-    std::queue<std::pair<Node*, int>> ret_q;
+    // _get_queue will also reconstruct repr
     std::queue<std::pair<Node*, int>> q;
     std::pair<Node*, int> curr_pair;
-    Node *left_node, *right_node;
 
     q.push(std::make_pair(node, 0));
-    ret_q.push(std::make_pair(node, 0));
+    if (rq != nullptr) rq->push(std::make_pair(node, 0));
 
     while (!q.empty()) {
         curr_pair = q.front();
+        auto repr_size = curr_pair.first->repr.size();
         if (curr_pair.first->left != nullptr) {
             q.push(std::make_pair(curr_pair.first->left, curr_pair.second + 1));
-            ret_q.push(std::make_pair(curr_pair.first->left, curr_pair.second + 1));
+            if (rq != nullptr) rq->push(std::make_pair(curr_pair.first->left, curr_pair.second + 1));
+            curr_pair.first->left->repr = curr_pair.first->repr;
+            curr_pair.first->left->repr.resize(repr_size + 1);
+            curr_pair.first->left->repr[repr_size] = 1;
         }
         if (curr_pair.first->right != nullptr) {
             q.push(std::make_pair(curr_pair.first->right, curr_pair.second + 1));
-            ret_q.push(std::make_pair(curr_pair.first->right, curr_pair.second + 1));
+            if (rq != nullptr) rq->push(std::make_pair(curr_pair.first->right, curr_pair.second + 1));
+            curr_pair.first->right->repr = curr_pair.first->repr;
+            curr_pair.first->right->repr.resize(repr_size + 1);
+            curr_pair.first->right->repr[repr_size] = 0;
         }
         q.pop();
     }
-    return ret_q;
 }
 
 void Tree::display()
@@ -165,7 +178,8 @@ void Tree::display()
 
 void Tree::display(Node *node)
 {
-    std::queue<std::pair<Node*, int>> q = this->_get_queue(node);
+    std::queue<std::pair<Node*, int>> q;
+    this->_get_queue(node, &q);
     std::pair<Node*, int> curr_pair;
     uint64_t id;
     uint32_t symbol, weight;
@@ -174,11 +188,26 @@ void Tree::display(Node *node)
     while (!q.empty()) {
         curr_pair = q.front();
         curr_pair.first->_info(&id, &symbol, &weight, &parent, &NYT);
-        if (curr_pair.first->external() && !curr_pair.first->NYT) {
-            spdlog::info("id: {} | type: e | weight: {} | level: {} | symbol: {}", id, weight, curr_pair.second, symbol);
+        if (curr_pair.first->NYT) {
+            spdlog::debug("id: {} | type: e | weight: {} | level: {} | symbol: NYT",
+                    id, weight, curr_pair.second);
+        } else if (curr_pair.first->external()) {
+            spdlog::debug("id: {} | type: e | weight: {} | level: {} | symbol: {}",
+                    id, weight, curr_pair.second, symbol);
         } else {
-            spdlog::info("id: {} | type: i | weight: {} | level: {}", id, weight, curr_pair.second);
+            spdlog::debug("id: {} | type: i | weight: {} | level: {} | left_id: {} | right_id: {}",
+                    id, weight, curr_pair.second,
+                    curr_pair.first->left->id,
+                    curr_pair.first->right->id);
         }
+        std::string buf;
+        std::stringstream ss;
+        boost::to_string(curr_pair.first->repr, buf);
+        ss << buf;
+        if (curr_pair.first->parent != nullptr) {
+            ss << " | parent: " << curr_pair.first->parent->id;
+        }
+        spdlog::debug("\trepr: {}", ss.str());
         q.pop();
     }
 }
@@ -189,4 +218,27 @@ Node *Tree::search(uint32_t symbol)
     // otherwise each update is at least O(N)
     auto it = this->symbol_map.find(symbol);
     return (it != this->symbol_map.end()) ? it->second : nullptr;
+}
+
+void Tree::swap(Node *node_a, Node *node_b)
+{
+    // id - odd == left | even == right
+    // val - a | b
+    // 0 - right | right
+    // 1 - left | right
+    // 2 - right | left
+    // 3 - left | left
+    if (node_a == node_b) return;
+    spdlog::debug("Swapping nodes {},{} with {},{}",
+            node_a->external() ? "e" : "i", node_a->id,
+            node_b->external() ? "e" : "i", node_b->id);
+    auto val = ((node_a->id & 1) | ((node_b->id & 1) << 1));
+    switch (val) {
+    case 0: std::swap(node_a->parent->right, node_b->parent->right); break;
+    case 1: std::swap(node_a->parent->left, node_b->parent->right); break;
+    case 2: std::swap(node_a->parent->right, node_b->parent->left); break;
+    case 3: std::swap(node_a->parent->left, node_b->parent->left); break;
+    }
+    std::swap(node_a->parent, node_b->parent);
+    node_a->swap(node_b);
 }

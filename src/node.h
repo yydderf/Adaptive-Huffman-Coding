@@ -11,6 +11,7 @@ enum NODE_POS {
 
 class Node {
     friend class Tree;
+    friend struct NodeAscComp;
 public:
     Node();
     Node(uint64_t _id);
@@ -22,6 +23,7 @@ public:
     void _info(uint64_t *id, uint32_t *symbol, uint32_t *weight, Node **parent, bool *NYT);
     void set(uint32_t _symbol);
     bool external();
+    void swap(Node *other);
 private:
     Node *left;
     Node *right;

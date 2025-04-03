@@ -4,11 +4,19 @@
 #include <cstdint>
 #include <queue>
 #include <boost/dynamic_bitset.hpp>
+#include <set>
 
 #include "node.h"
 
 // TODO
 // template Tree & Node so reduce the memory use for each node
+
+struct NodeAscComp {
+    bool operator()(const Node *lhs, const Node *rhs) const {
+        return lhs->id < rhs->id;
+    }
+};
+
 class Tree {
 public:
     Tree();
@@ -16,17 +24,18 @@ public:
     ~Tree();
     void update(uint32_t symbol);
     void _info(uint32_t *_symbol_size, Node **root);
-    std::queue<std::pair<Node*, int>> _get_queue(Node *node);
+    void _get_queue(Node *node, std::queue<std::pair<Node *, int>> *rq);
     void display();
     void display(Node *node);
     void _switch(Node *node);
+    void _remove_from_set(Node *target_node);
+    void swap(Node *node_a, Node *node_b);
     Node *search(uint32_t symbol);
 private:
     uint32_t symbol_size;
     uint32_t symbol_trans;
     std::unordered_map<uint32_t, Node*> symbol_map;
-    std::unordered_map<uint32_t, std::vector<Node*>> block_map;
-    boost::dynamic_bitset<> NYT;
+    std::unordered_map<uint32_t, std::set<Node*, NodeAscComp>> block_map;
     Node *root;
     Node *node_NYT;
 };

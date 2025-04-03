@@ -5,10 +5,10 @@
 #include "node.h"
 
 Node::Node() :
-    Node(0, 0, 1, nullptr, true) {}
+    Node(0, 0, 0, nullptr, true) {}
 
 Node::Node(uint64_t _id) :
-    Node(_id, 0, 1, nullptr, true) {}
+    Node(_id, 0, 0, nullptr, true) {}
 
 Node::Node(uint32_t _symbol, Node *_parent, NODE_POS node_pos) :
     left(nullptr), right(nullptr), parent(_parent),
@@ -28,6 +28,7 @@ Node::Node(uint32_t _symbol, Node *_parent, NODE_POS node_pos) :
         this->NYT = true;
         this->repr[repr_size - 1] = 1;
         _parent->left = this;
+        _parent->NYT = false;
     } else {
         this->id = _parent->id - 1;
         this->NYT = false;
@@ -68,4 +69,19 @@ void Node::set(uint32_t _symbol)
 bool Node::external()
 {
     return (this->left == nullptr && this->right == nullptr);
+}
+
+void Node::swap(Node *other)
+{
+    if (this == other) return;
+    spdlog::debug("Swapping vals {},{} with {},{}",
+            this->external() ? "e" : "i", this->id,
+            other->external() ? "e" : "i", other->id);
+    std::swap(this->id, other->id);
+    std::swap(this->NYT, other->NYT);
+    // swap the weight, even though the
+    // weight should be the same
+    std::swap(this->weight, other->weight);
+    // std::swap(this->symbol, other->symbol);
+    std::swap(this->repr, other->repr);
 }
