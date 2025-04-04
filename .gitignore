@@ -1,3 +1,4 @@
 build/
 res/alexnet.pth
+alexnet*
 out

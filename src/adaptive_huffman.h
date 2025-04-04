@@ -14,12 +14,9 @@ public:
     {
         spdlog::info("Encoder Initialized");
     }
-    void proc();
+    void proc() override;
 private:
     Tree tree;
-    boost::dynamic_bitset<> bit_buf;
-    void write_bits(const boost::dynamic_bitset<> &bits);
-    void flush_bits();
 };
 
 class Decoder: public Coder {
@@ -29,14 +26,9 @@ public:
     {
         spdlog::info("Decoder Initialized");
     }
-    void proc();
+    void proc() override;
 private:
     Tree tree;
-    boost::dynamic_bitset<> bit_buf;
-    bool read_bit(bool &bit);
-    boost::dynamic_bitset<> read_bits(int n);
-
-    bool read_byte(uint8_t &byte);
 };
 
 

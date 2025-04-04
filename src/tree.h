@@ -33,12 +33,13 @@ public:
     Node *search(uint32_t symbol);
     Node *get_NYT();
     Node *get_root();
+protected:
+    Node *root;
 private:
     uint32_t symbol_size;
     uint32_t symbol_trans;
     std::unordered_map<uint32_t, Node*> symbol_map;
     std::unordered_map<uint32_t, std::set<Node*, NodeAscComp>> block_map;
-    Node *root;
     Node *node_NYT;
 };
 

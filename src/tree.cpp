@@ -12,17 +12,17 @@
 #include "tree.h"
 
 Tree::Tree() :
+    root(new Node(256 * 2 - 1)),
     symbol_size(256),
-    symbol_trans(0),
-    root(new Node(256 * 2 - 1))
+    symbol_trans(0)
 {
     this->node_NYT = root;
 }
 
 Tree::Tree(uint32_t _symbol_size) :
+    root(new Node(_symbol_size * 2 - 1)),
     symbol_size(_symbol_size),
-    symbol_trans(0),
-    root(new Node(_symbol_size * 2 - 1))
+    symbol_trans(0)
 {
     this->node_NYT = root;
 }

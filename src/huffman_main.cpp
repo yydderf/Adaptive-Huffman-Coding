@@ -18,9 +18,10 @@ int main(int argc, char **argv)
     }
     // coder
     Coder coder(&dl, args.bits, args.ofname);
-    if (!coder.proc()) {
-        return 1;
-    }
+    coder.proc();
+    // if (!coder.proc()) {
+    //     return 1;
+    // }
 
     return 0;
 }

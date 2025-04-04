@@ -86,6 +86,9 @@ add_executable(huffman_main
     src/huffman.cpp
     src/argparse.cpp
     src/dataloader.cpp
+    src/tree.cpp
+    src/node.cpp
+    src/static_tree.cpp
     src/coder.cpp
     src/utils.cpp
 )
@@ -139,6 +142,17 @@ add_executable(dataloader_test
     tests/dataloader_test.cpp
     src/dataloader.cpp
 )
+add_executable(huffman_test
+    tests/huffman_test.cpp
+    src/huffman.cpp
+    src/coder.cpp
+    src/argparse.cpp
+    src/dataloader.cpp
+    src/static_tree.cpp
+    src/tree.cpp
+    src/node.cpp
+    src/utils.cpp
+)
 add_executable(adaptive_huffman_test
     tests/adaptive_huffman_test.cpp
     src/adaptive_huffman.cpp
@@ -162,6 +176,10 @@ target_link_libraries(tree_test
     spdlog::spdlog
 )
 target_link_libraries(dataloader_test
+    GTest::gtest_main
+    spdlog::spdlog
+)
+target_link_libraries(huffman_test
     GTest::gtest_main
     spdlog::spdlog
 )

@@ -11,10 +11,12 @@ enum NODE_POS {
 
 class Node {
     friend class Tree;
+    friend class StaticTree;
     friend class Coder;
     friend class Encoder;
     friend class Decoder;
     friend struct NodeAscComp;
+    friend struct StaticNodeDscComp;
 public:
     Node();
     Node(uint64_t _id);
