@@ -11,6 +11,8 @@ enum NODE_POS {
 
 class Node {
     friend class Tree;
+    friend class Coder;
+    friend class Encoder;
     friend struct NodeAscComp;
 public:
     Node();

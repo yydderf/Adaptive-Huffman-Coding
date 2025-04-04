@@ -57,6 +57,7 @@ void Tree::update(Node *curr_node, uint32_t symbol)
 
         // update table
         this->symbol_map[symbol] = new_symbol;
+
         this->block_map[this->node_NYT->weight].insert(this->node_NYT);
         this->block_map[new_symbol->weight].insert(new_symbol);
 
@@ -115,22 +116,28 @@ void Tree::_switch(Node *node)
     if (it == this->block_map.end()) {
         this->block_map[node->weight] = std::set<Node*, NodeAscComp>();
         this->block_map[node->weight].insert(node);
-    } else {
-        // get max_id, switch node with max_id node
-        // remove node from old_weight container
-        // push node to new_weight container
-        // std::vector fetch in O(N), remove in O(N)
-        // std::priority_queue fetch in O(log(N)), remove in O(?)
-        // 2. target weight has been registered, node != max_id
-        // 3. target weight has been registered, node == max_id
-        auto rit = it->second.rbegin();
-        if (*rit == node->parent) {
-            rit = std::next(rit);
-        }
-        Node *max_node = *rit;
-        spdlog::debug("max node id: {}", max_node->id);
-        this->swap(node, max_node);
+        return;
     }
+    // get max_id, switch node with max_id node
+    // remove node from old_weight container
+    // push node to new_weight container
+    // std::vector fetch in O(N), remove in O(N)
+    // std::priority_queue fetch in O(log(N)), remove in O(?)
+    // 2. target weight has been registered, node != max_id
+    // 3. target weight has been registered, node == max_id
+    auto rit = it->second.rbegin();
+    if (*rit == node->parent) {
+        auto next_rit = std::next(rit);
+        if (next_rit == it->second.rend()) {
+            spdlog::debug("no candidate found for swapping");
+            return;
+        }
+        rit = next_rit;
+    }
+
+    Node *max_node = *rit;
+    spdlog::debug("max node id: {}", max_node->id);
+    this->swap(node, max_node);
 }
 
 void Tree::_info(uint32_t *symbol_size, Node **root)
@@ -217,6 +224,11 @@ Node *Tree::search(uint32_t symbol)
     spdlog::debug("symbol: {}", symbol);
     auto it = this->symbol_map.find(symbol);
     return (it != this->symbol_map.end()) ? it->second : nullptr;
+}
+
+Node *Tree::get_NYT()
+{
+    return this->node_NYT;
 }
 
 void Tree::swap(Node *node_a, Node *node_b)

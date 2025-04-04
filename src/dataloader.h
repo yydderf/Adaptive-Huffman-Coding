@@ -31,12 +31,13 @@ public:
 
     // populate nbytes
     std::vector<char> *get(ssize_t nbytes, std::streamsize *read_bytes);
+
+    size_t file_size = 0;
 private:
     std::ifstream ifs;
     std::vector<char> buf;
     size_t read_block_size = 1024;
     size_t freq_block_size = 1024;
-    size_t file_size = 0;
     ssize_t buf_size = DEFAULT_BUF_SIZE;
     int _mode;
     int _bits;

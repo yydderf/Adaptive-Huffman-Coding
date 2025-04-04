@@ -86,13 +86,17 @@ add_executable(huffman
     src/argparse.cpp
     src/dataloader.cpp
     src/coder.cpp
+    src/utils.cpp
 )
 
 add_executable(adaptive_huffman
     src/adaptive_huffman.cpp
+    src/coder.cpp
     src/argparse.cpp
     src/dataloader.cpp
-    src/coder.cpp
+    src/tree.cpp
+    src/node.cpp
+    src/utils.cpp
 )
 
 target_link_libraries(huffman

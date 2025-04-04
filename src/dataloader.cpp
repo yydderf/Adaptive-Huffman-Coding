@@ -19,6 +19,7 @@ DataLoader::DataLoader(const char *ifname, int bits, int mode)
     this->file_size = this->ifs.tellg();
     this->ifs.seekg(0, this->ifs.beg);
     spdlog::debug("Input file size is: {}", this->file_size);
+    spdlog::info("DataLoader Initialized");
 }
 
 bool DataLoader::ok()
@@ -66,6 +67,7 @@ std::vector<char> *DataLoader::get(ssize_t nbytes, std::streamsize *read_bytes)
         spdlog::debug("Read {} bytes from file", nbytes);
     } else {
         spdlog::debug("Not enough data in file, only read {} bytes from file", *read_bytes);
+        this->_eof = true;
     }
 
     return &(this->buf);

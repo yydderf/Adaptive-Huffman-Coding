@@ -1,4 +1,5 @@
 #include <spdlog/spdlog.h>
+#include "dataloader.h"
 #include "coder.h"
 
 Coder::Coder(DataLoader *dl, int bits, const char *ofname)

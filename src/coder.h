@@ -8,9 +8,9 @@ class Coder {
 public:
     Coder(DataLoader *dl, int bits, const char *ofname);
     int proc();
-private:
-    std::ofstream ofs;
+protected:
     DataLoader *dl;
+    std::ofstream ofs;
     int bits;
 };
 

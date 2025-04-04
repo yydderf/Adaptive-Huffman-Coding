@@ -31,6 +31,7 @@ public:
     void _remove_from_set(Node *target_node);
     void swap(Node *node_a, Node *node_b);
     Node *search(uint32_t symbol);
+    Node *get_NYT();
 private:
     uint32_t symbol_size;
     uint32_t symbol_trans;
