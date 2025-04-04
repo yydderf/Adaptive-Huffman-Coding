@@ -47,6 +47,7 @@ void Tree::update(Node *curr_node, uint32_t symbol)
     // - NYT gives birth to new NYT and external node
     // - increment weight of the external node and old NYT
     // - to old NYT
+    spdlog::debug("tree update");
     if (curr_node == nullptr) {
         Node *new_symbol = new Node(symbol, this->node_NYT, NODE_RIGHT);
         Node *new_NYT = new Node(symbol, this->node_NYT, NODE_LEFT);
@@ -194,13 +195,13 @@ void Tree::display(Node *node)
         curr_pair = q.front();
         curr_pair.first->_info(&id, &symbol, &weight, &parent, &NYT);
         if (curr_pair.first->NYT) {
-            spdlog::debug("id: {} | type: e | weight: {} | level: {} | symbol: NYT",
+            spdlog::info("id: {} | type: e | weight: {} | level: {} | symbol: NYT",
                     id, weight, curr_pair.second);
         } else if (curr_pair.first->external()) {
-            spdlog::debug("id: {} | type: e | weight: {} | level: {} | symbol: {}",
+            spdlog::info("id: {} | type: e | weight: {} | level: {} | symbol: {}",
                     id, weight, curr_pair.second, symbol);
         } else {
-            spdlog::debug("id: {} | type: i | weight: {} | level: {} | left_id: {} | right_id: {}",
+            spdlog::info("id: {} | type: i | weight: {} | level: {} | left_id: {} | right_id: {}",
                     id, weight, curr_pair.second,
                     curr_pair.first->left->id,
                     curr_pair.first->right->id);
@@ -212,7 +213,7 @@ void Tree::display(Node *node)
         if (curr_pair.first->parent != nullptr) {
             ss << " | parent: " << curr_pair.first->parent->id;
         }
-        spdlog::debug("\trepr: {}", ss.str());
+        spdlog::info("\trepr: {}", ss.str());
         q.pop();
     }
 }
@@ -229,6 +230,11 @@ Node *Tree::search(uint32_t symbol)
 Node *Tree::get_NYT()
 {
     return this->node_NYT;
+}
+
+Node *Tree::get_root()
+{
+    return this->root;
 }
 
 void Tree::swap(Node *node_a, Node *node_b)

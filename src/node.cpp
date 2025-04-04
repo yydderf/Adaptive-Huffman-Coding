@@ -71,6 +71,11 @@ bool Node::external()
     return (this->left == nullptr && this->right == nullptr);
 }
 
+bool Node::is_NYT()
+{
+    return (this->NYT);
+}
+
 void Node::swap(Node *other)
 {
     if (this == other) return;

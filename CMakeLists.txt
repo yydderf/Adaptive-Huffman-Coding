@@ -81,7 +81,8 @@ if (NOT ${Boost_FOUND})
     add_library(Boost::boost ALIAS boost_interface)
 endif()
 
-add_executable(huffman
+add_executable(huffman_main
+    src/huffman_main.cpp
     src/huffman.cpp
     src/argparse.cpp
     src/dataloader.cpp
@@ -89,7 +90,8 @@ add_executable(huffman
     src/utils.cpp
 )
 
-add_executable(adaptive_huffman
+add_executable(adaptive_huffman_main
+    src/adaptive_huffman_main.cpp
     src/adaptive_huffman.cpp
     src/coder.cpp
     src/argparse.cpp
@@ -99,16 +101,16 @@ add_executable(adaptive_huffman
     src/utils.cpp
 )
 
-target_link_libraries(huffman
+target_link_libraries(huffman_main
     PRIVATE spdlog::spdlog
 )
 
-target_link_libraries(adaptive_huffman
+target_link_libraries(adaptive_huffman_main
     PRIVATE spdlog::spdlog
 )
 
-add_dependencies(huffman spdlog::spdlog Boost::boost)
-add_dependencies(adaptive_huffman spdlog::spdlog Boost::boost)
+add_dependencies(huffman_main spdlog::spdlog Boost::boost)
+add_dependencies(adaptive_huffman_main spdlog::spdlog Boost::boost)
 
 include(FetchContent)
 FetchContent_Declare(
@@ -137,6 +139,16 @@ add_executable(dataloader_test
     tests/dataloader_test.cpp
     src/dataloader.cpp
 )
+add_executable(adaptive_huffman_test
+    tests/adaptive_huffman_test.cpp
+    src/adaptive_huffman.cpp
+    src/coder.cpp
+    src/argparse.cpp
+    src/dataloader.cpp
+    src/tree.cpp
+    src/node.cpp
+    src/utils.cpp
+)
 
 # for #include <gtest/gtest.h>
 target_link_libraries(node_test
@@ -150,6 +162,10 @@ target_link_libraries(tree_test
     spdlog::spdlog
 )
 target_link_libraries(dataloader_test
+    GTest::gtest_main
+    spdlog::spdlog
+)
+target_link_libraries(adaptive_huffman_test
     GTest::gtest_main
     spdlog::spdlog
 )

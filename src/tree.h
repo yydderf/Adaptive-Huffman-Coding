@@ -32,6 +32,7 @@ public:
     void swap(Node *node_a, Node *node_b);
     Node *search(uint32_t symbol);
     Node *get_NYT();
+    Node *get_root();
 private:
     uint32_t symbol_size;
     uint32_t symbol_trans;

@@ -3,15 +3,22 @@
 #include <iostream>
 #include <sstream>
 #include <vector>
+#include <algorithm>
 
-#include "argparse.h"
+#include "adaptive_huffman.h"
+#include "utils.h"
 #include "node.h"
 #include "tree.h"
-#include "utils.h"
-#include "adaptive_huffman.h"
 
 void Encoder::write_bits(const boost::dynamic_bitset<> &bits)
 {
+    boost::dynamic_bitset<> tmp_repr;
+    std::string repr_buf;
+
+    boost::to_string(bits, repr_buf);
+    std::reverse(repr_buf.begin(), repr_buf.end());
+    spdlog::info("Encoder write_bits input: {}", repr_buf);
+
     size_t old_size = this->bit_buf.size();
     this->bit_buf.resize(old_size + bits.size());
     for (size_t i = 0; i < bits.size(); ++i) {
@@ -22,17 +29,26 @@ void Encoder::write_bits(const boost::dynamic_bitset<> &bits)
         for (size_t i = 0; i < 8; ++i) {
             byte = (byte << 1) | (this->bit_buf[i] ? 1 : 0);
         }
+
+        tmp_repr = this->bit_buf;
+        tmp_repr.resize(8);
+        boost::to_string(tmp_repr, repr_buf);
+        std::reverse(repr_buf.begin(), repr_buf.end());
+        spdlog::info("Encoder write_bits written: {}", repr_buf);
+
         this->ofs.write(reinterpret_cast<const char*>(&byte), 1);
-        boost::dynamic_bitset<> new_buf(this->bit_buf.size() - 8);
-        for (size_t i = 8; i < this->bit_buf.size(); ++i) {
-            new_buf[i - 8] = this->bit_buf[i];
-        }
-        this->bit_buf = new_buf;
+        erase_left_bits(&(this->bit_buf), 8);
     }
+
+    tmp_repr = this->bit_buf;
+    boost::to_string(tmp_repr, repr_buf);
+    std::reverse(repr_buf.begin(), repr_buf.end());
+    spdlog::info("Encoder write_bits remaining: {}", repr_buf);
 }
 
 void Encoder::flush_bits()
 {
+    std::string repr_buf;
     if (this->bit_buf.size() > 0) {
         // size_t remaining = this->bit_buf.size();
         this->bit_buf.resize(8);
@@ -41,6 +57,9 @@ void Encoder::flush_bits()
             byte = (byte << 1) | (this->bit_buf[i] ? 1 : 0);
         }
         this->ofs.write(reinterpret_cast<const char*>(&byte), 1);
+        boost::to_string(this->bit_buf, repr_buf);
+        std::reverse(repr_buf.begin(), repr_buf.end());
+        spdlog::info("Encoder write_bits remaining: {}", repr_buf);
         this->bit_buf.clear();
     }
 }
@@ -74,26 +93,96 @@ void Encoder::proc()
         std::cout << "[" << cnt * buf_size << "/" << this->dl->file_size << "]\r" << std::flush;
     }
     this->flush_bits();
+    this->tree.display();
+    this->ofs.flush();
     spdlog::info("Data encode proc ends");
 }
 
-int main(int argc, char **argv)
+bool Decoder::read_bit(bool &bit)
 {
-    auto args = Arguments(argc, argv);
-
-    spdlog::info("adaptive huffman init");
-    // data loader
-    DataLoader dl(args.ifname, args.bits, READ_ONCE | MODE_ENC);
-    if (!dl.ok()) {
-        return 1;
+    if (this->bit_buf.empty()) {
+        uint8_t byte;
+        if (!this->read_byte(byte)) {
+            return false;
+        }
+        boost::dynamic_bitset<> tmp(8, static_cast<unsigned long long>(byte));
+        for (size_t i = 0; i < 8; ++i) {
+            this->bit_buf.push_back(tmp.test(7 - i));
+        }
     }
-    // coder
-    Encoder encoder(&dl, args.bits, args.ofname);
-    encoder.proc();
-    // if (!encoder.proc()) {
-    //     return 1;
-    // }
-
-    return 0;
+    bit = this->bit_buf[0];
+    // remove the first bit from the bitset
+    // this->bit_buf.erase(this->bit_buf.begin());
+    erase_left_bits(&(this->bit_buf), 1);
+    return true;
 }
 
+boost::dynamic_bitset<> Decoder::read_bits(int n)
+{
+    boost::dynamic_bitset<> bits(n);
+    for (int i = 0; i < n; ++i) {
+        bool b;
+        if (!this->read_bit(b)) {
+            break;
+        }
+        bits[n - 1 - i] = b;
+    }
+    return bits;
+}
+
+bool Decoder::read_byte(uint8_t &byte)
+{
+    std::streamsize read_bytes;
+    std::vector<char> *data = this->dl->get(1, &read_bytes);
+    if (data == nullptr || read_bytes < 1) {
+        return false;
+    }
+    byte = static_cast<uint8_t>((*data)[0]);
+    return true;
+}
+
+void Decoder::proc()
+{
+    boost::dynamic_bitset<> tmp_repr;
+    std::string repr_buf;
+
+
+    int read_bits_size = 8;
+    while (true) {
+        Node *curr_node = this->tree.get_root();
+        if (curr_node == nullptr) break;
+
+        // track path until external node is reached
+        while (!curr_node->external()) {
+            bool b;
+            if (!this->read_bit(b)) {
+                goto proc_end;
+            }
+            std::cout << b << std::endl;
+            curr_node = b ? curr_node->left : curr_node->right;
+            if (curr_node == nullptr) {
+                spdlog::error("Failed to decode: reached a null node");
+                return;
+            }
+        }
+        uint32_t symbol;
+        if (curr_node->is_NYT()) {
+            boost::dynamic_bitset<> literal = this->read_bits(read_bits_size);
+            symbol = bitset_to_int(literal);
+
+            boost::to_string(literal, repr_buf);
+            std::reverse(repr_buf.begin(), repr_buf.end());
+            spdlog::info("Decoder write_bits literal: {}, symbol: {}", repr_buf, symbol);
+        } else {
+            symbol = curr_node->symbol;
+            spdlog::info("Decoder write_bits symbol: {}", symbol);
+        }
+        char out_char = static_cast<char>(symbol);
+        ofs.write(&out_char, 1);
+        Node *node = this->tree.search(symbol);
+        this->tree.update(node, symbol);
+    }
+proc_end:
+    this->ofs.flush();
+    spdlog::info("Data decode proc ends");
+}

@@ -13,6 +13,7 @@ class Node {
     friend class Tree;
     friend class Coder;
     friend class Encoder;
+    friend class Decoder;
     friend struct NodeAscComp;
 public:
     Node();
@@ -25,6 +26,7 @@ public:
     void _info(uint64_t *id, uint32_t *symbol, uint32_t *weight, Node **parent, bool *NYT);
     void set(uint32_t _symbol);
     bool external();
+    bool is_NYT();
     void swap(Node *other);
 private:
     Node *left;

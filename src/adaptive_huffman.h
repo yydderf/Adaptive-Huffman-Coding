@@ -32,6 +32,11 @@ public:
     void proc();
 private:
     Tree tree;
+    boost::dynamic_bitset<> bit_buf;
+    bool read_bit(bool &bit);
+    boost::dynamic_bitset<> read_bits(int n);
+
+    bool read_byte(uint8_t &byte);
 };
 
 
