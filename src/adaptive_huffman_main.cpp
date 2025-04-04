@@ -10,13 +10,19 @@ int main(int argc, char **argv)
 
     spdlog::info("adaptive huffman init");
     // data loader
-    DataLoader dl(args.ifname, args.bits, READ_ONCE | MODE_ENC);
+    int mode_dec = args.decode ? MODE_DEC : MODE_ENC;
+    DataLoader dl(args.ifname, args.bits, READ_ONCE | ADAPTIVE | mode_dec);
     if (!dl.ok()) {
         return 1;
     }
     // coder
-    Encoder encoder(&dl, args.bits, args.ofname);
-    encoder.proc();
+    if (args.decode) {
+        Decoder decoder(&dl, args.bits, args.ofname);
+        decoder.proc();
+    } else {
+        Encoder encoder(&dl, args.bits, args.ofname);
+        encoder.proc();
+    }
 
     return 0;
 }

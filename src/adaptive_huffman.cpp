@@ -49,6 +49,7 @@ void Encoder::write_bits(const boost::dynamic_bitset<> &bits)
 void Encoder::flush_bits()
 {
     std::string repr_buf;
+    uint8_t padding_size = static_cast<uint8_t>(this->bit_buf.size());
     if (this->bit_buf.size() > 0) {
         // size_t remaining = this->bit_buf.size();
         this->bit_buf.resize(8);
@@ -62,6 +63,7 @@ void Encoder::flush_bits()
         spdlog::info("Encoder write_bits remaining: {}", repr_buf);
         this->bit_buf.clear();
     }
+    this->ofs.write(reinterpret_cast<const char*>(&padding_size), 1);
 }
 
 void Encoder::proc()
@@ -69,6 +71,7 @@ void Encoder::proc()
     std::streamsize buf_size, read_bytes;
     buf_size = 1024;
     uint32_t cnt = 0;
+    spdlog::warn("Data encode proc started");
     while (!this->dl->eof()) {
         std::vector<char> *data = dl->get(buf_size, &read_bytes);
         spdlog::debug("Read {} bytes from file", read_bytes);
@@ -95,7 +98,7 @@ void Encoder::proc()
     this->flush_bits();
     this->tree.display();
     this->ofs.flush();
-    spdlog::info("Data encode proc ends");
+    spdlog::warn("Data encode proc ended");
 }
 
 bool Decoder::read_bit(bool &bit)
@@ -146,7 +149,10 @@ void Decoder::proc()
     boost::dynamic_bitset<> tmp_repr;
     std::string repr_buf;
 
-
+    spdlog::warn("Data decoding proc started");
+    uint64_t tot_bits = this->dl->file_size * 8 - static_cast<uint64_t>(this->dl->padding_size) - 8;
+    uint64_t tot_bytes = tot_bits / 8;
+    uint64_t acc_bits = 0;
     int read_bits_size = 8;
     while (true) {
         Node *curr_node = this->tree.get_root();
@@ -155,10 +161,10 @@ void Decoder::proc()
         // track path until external node is reached
         while (!curr_node->external()) {
             bool b;
-            if (!this->read_bit(b)) {
+            if (!this->read_bit(b) || acc_bits == tot_bits) {
                 goto proc_end;
             }
-            std::cout << b << std::endl;
+            acc_bits += 1;
             curr_node = b ? curr_node->left : curr_node->right;
             if (curr_node == nullptr) {
                 spdlog::error("Failed to decode: reached a null node");
@@ -168,6 +174,7 @@ void Decoder::proc()
         uint32_t symbol;
         if (curr_node->is_NYT()) {
             boost::dynamic_bitset<> literal = this->read_bits(read_bits_size);
+            acc_bits += read_bits_size;
             symbol = bitset_to_int(literal);
 
             boost::to_string(literal, repr_buf);
@@ -181,8 +188,9 @@ void Decoder::proc()
         ofs.write(&out_char, 1);
         Node *node = this->tree.search(symbol);
         this->tree.update(node, symbol);
+        std::cout << "[" << acc_bits / 8 << "/" << tot_bytes << "]\r" << std::flush;
     }
 proc_end:
     this->ofs.flush();
-    spdlog::info("Data decode proc ends");
+    spdlog::warn("Data decoding proc ended");
 }

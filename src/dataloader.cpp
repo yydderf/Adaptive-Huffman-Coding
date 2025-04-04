@@ -15,7 +15,15 @@ DataLoader::DataLoader(const char *ifname, int bits, int mode)
     this->_bits = bits;
     this->buf.resize(this->buf_size);
 
-    this->ifs.seekg(0, this->ifs.end);
+    if (this->_mode & ADAPTIVE && this->_mode & MODE_DEC) {
+        this->ifs.seekg(-1, this->ifs.end);
+        char tmp_char;
+        this->ifs.read(&tmp_char, 1);
+        this->padding_size = (8 - static_cast<size_t>(tmp_char));
+        spdlog::info("Padding size: {}", padding_size);
+    } else {
+        this->ifs.seekg(0, this->ifs.end);
+    }
     this->file_size = this->ifs.tellg();
     this->ifs.seekg(0, this->ifs.beg);
     spdlog::debug("Input file size is: {}", this->file_size);

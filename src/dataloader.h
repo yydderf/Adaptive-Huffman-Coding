@@ -13,6 +13,7 @@ enum DL_MODE {
     READ_ONCE  = 1L << 1,
     MODE_ENC   = 1L << 2,
     MODE_DEC   = 1L << 3,
+    ADAPTIVE   = 1L << 4,
 };
 
 struct RawBlock {
@@ -33,6 +34,8 @@ public:
     std::vector<char> *get(ssize_t nbytes, std::streamsize *read_bytes);
 
     size_t file_size = 0;
+    // for adaptive huffman padding size
+    size_t padding_size = 0;
 private:
     std::ifstream ifs;
     std::vector<char> buf;

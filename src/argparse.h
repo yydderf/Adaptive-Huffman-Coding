@@ -12,6 +12,7 @@ public:
     const char *ofname = "out";
     int bits = 8;
     bool verbose = false;
+    bool decode = false;
 private:
 };
 
