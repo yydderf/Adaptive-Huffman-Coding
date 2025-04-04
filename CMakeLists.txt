@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.18)
 
-project(Information_Theory_Adaptive_Huffman CXX)
-set(CMAKE_CXX_STANDARD 11)
+project(Information_Theory_Adaptive_Huffman CXX C)
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if (NOT WIN32)
