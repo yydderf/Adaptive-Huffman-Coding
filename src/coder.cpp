@@ -52,7 +52,7 @@ void Coder::write_bits(const boost::dynamic_bitset<> &bits)
 void Coder::flush_bits()
 {
     std::string repr_buf;
-    uint8_t padding_size = static_cast<uint8_t>(this->bit_buf.size());
+    uint8_t padding_size = 8 - static_cast<uint8_t>(this->bit_buf.size());
     if (this->bit_buf.size() > 0) {
         // size_t remaining = this->bit_buf.size();
         this->bit_buf.resize(8);
@@ -66,6 +66,7 @@ void Coder::flush_bits()
         spdlog::info("Encoder write_bits remaining: {}", repr_buf);
         this->bit_buf.clear();
     }
+    spdlog::warn("padding size: {}", padding_size);
     this->ofs.write(reinterpret_cast<const char*>(&padding_size), 1);
 }
 
@@ -88,7 +89,7 @@ bool Coder::read_bit(bool &bit)
     return true;
 }
 
-boost::dynamic_bitset<> Coder::read_bits(int n, bool rev)
+boost::dynamic_bitset<> Coder::read_bits(int n)
 {
     boost::dynamic_bitset<> bits(n);
     for (int i = 0; i < n; ++i) {
@@ -96,11 +97,20 @@ boost::dynamic_bitset<> Coder::read_bits(int n, bool rev)
         if (!this->read_bit(b)) {
             break;
         }
-        if (rev) {
-            bits[i] = b;
-        } else {
-            bits[n - 1 - i] = b;
+        bits[n - 1 - i] = b;
+    }
+    return bits;
+}
+
+boost::dynamic_bitset<> Coder::read_bits_rev(int n)
+{
+    boost::dynamic_bitset<> bits(n);
+    for (int i = 0; i < n; ++i) {
+        bool b;
+        if (!this->read_bit(b)) {
+            break;
         }
+        bits[i] = b;
     }
     return bits;
 }

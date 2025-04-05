@@ -6,6 +6,9 @@
 #include "static_tree.h"
 #include "dataloader.h"
 
+// for huffman encoder and decoder
+// tree is constructed in the proc
+// for auto alloc and dealloc
 class Encoder: public Coder {
 public:
     Encoder(DataLoader *dl, int bits, const char *ofname) :
@@ -14,8 +17,6 @@ public:
         spdlog::info("Encoder Initialized");
     }
     void proc() override;
-private:
-    StaticTree tree;
 };
 
 class Decoder: public Coder {
@@ -26,8 +27,6 @@ public:
         spdlog::info("Decoder Initialized");
     }
     void proc() override;
-private:
-    StaticTree tree;
 };
 
 #endif

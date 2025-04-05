@@ -20,7 +20,8 @@ protected:
     void flush_bits();
 
     bool read_bit(bool &bit);
-    boost::dynamic_bitset<> read_bits(int n, bool rev);
+    boost::dynamic_bitset<> read_bits(int n);
+    boost::dynamic_bitset<> read_bits_rev(int n);
     bool read_byte(uint8_t &byte);
 };
 

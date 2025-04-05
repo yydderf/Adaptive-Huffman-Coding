@@ -17,7 +17,7 @@
 
 void Encoder::proc() {
     // Read the entire input from the DataLoader.
-    auto raw_block = dl->next();
+    auto raw_block = this->dl->next();
     if (!raw_block) {
         spdlog::error("Failed to read input data");
         return;
@@ -118,11 +118,15 @@ void Decoder::proc() {
     }
     // The last byte in the file stores the padding.
     size_t encoded_data_bytes = file_size - header_bytes - 1;
+    if (encoded_data_bytes == 0) {
+        spdlog::error("No encoded data found");
+        return;
+    }
     size_t total_bits = encoded_data_bytes * 8;
     
     // Step 4: Read the encoded data bits.
     // read_bits(n) will read n bits using our internal bit_buf and read_bit().
-    boost::dynamic_bitset<> encoded_bits = read_bits(total_bits, 1);
+    boost::dynamic_bitset<> encoded_bits = this->read_bits_rev(total_bits);
     
     // Step 5: Read the final padding byte.
     uint8_t padding;
@@ -134,6 +138,7 @@ void Decoder::proc() {
         spdlog::error("Invalid padding value: {}", padding);
         return;
     }
+    spdlog::warn("padding size: {}", padding);
     size_t valid_bits = total_bits - padding;
     spdlog::info("Encoded data: {} bytes, total bits: {}, valid bits: {}",
                  encoded_data_bytes, total_bits, valid_bits);

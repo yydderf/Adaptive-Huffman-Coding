@@ -37,7 +37,7 @@ void Encoder::proc()
             tree.update(curr_node, symbol);
         }
         cnt += 1;
-        std::cout << "[" << cnt * buf_size << "/" << this->dl->file_size << "]\r" << std::flush;
+        // std::cout << "[" << cnt * buf_size << "/" << this->dl->file_size << "]\r" << std::flush;
     }
     this->flush_bits();
     this->tree.display();
@@ -74,7 +74,7 @@ void Decoder::proc()
         }
         uint32_t symbol;
         if (curr_node->is_NYT()) {
-            boost::dynamic_bitset<> literal = this->read_bits(read_bits_size, 0);
+            boost::dynamic_bitset<> literal = this->read_bits(read_bits_size);
             acc_bits += read_bits_size;
             symbol = bitset_to_int(literal);
 
@@ -89,7 +89,7 @@ void Decoder::proc()
         ofs.write(&out_char, 1);
         Node *node = this->tree.search(symbol);
         this->tree.update(node, symbol);
-        std::cout << "[" << acc_bits / 8 << "/" << tot_bytes << "]\r" << std::flush;
+        // std::cout << "[" << acc_bits / 8 << "/" << tot_bytes << "]\r" << std::flush;
     }
 proc_end:
     this->ofs.flush();

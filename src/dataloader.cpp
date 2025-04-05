@@ -19,7 +19,7 @@ DataLoader::DataLoader(const char *ifname, int bits, int mode)
         this->ifs.seekg(-1, this->ifs.end);
         char tmp_char;
         this->ifs.read(&tmp_char, 1);
-        this->padding_size = (8 - static_cast<size_t>(tmp_char));
+        this->padding_size = static_cast<size_t>(tmp_char);
         spdlog::info("Padding size: {}", padding_size);
     } else {
         this->ifs.seekg(0, this->ifs.end);
