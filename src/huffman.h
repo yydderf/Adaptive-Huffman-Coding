@@ -16,7 +16,8 @@ public:
     {
         spdlog::info("Encoder Initialized");
     }
-    void proc() override;
+    template <typename T = uint8_t>
+    void proc();
 };
 
 class Decoder: public Coder {
@@ -26,8 +27,11 @@ public:
     {
         spdlog::info("Decoder Initialized");
     }
-    void proc() override;
+    template <typename T = uint8_t>
+    void proc();
 };
+
+#include "huffman.tpp"
 
 #endif
 

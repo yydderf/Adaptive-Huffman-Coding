@@ -16,7 +16,7 @@ TEST(HuffmanEncodeDecode, BasicAssertions)
     ASSERT_EQ(edl.ok(), true);
     // coder
     Encoder encoder(&edl, 8, "mock_data.compressed.h");
-    encoder.proc();
+    encoder.proc<uint8_t>();
 
     DataLoader ddl("mock_data.compressed.h", 8, MODE_DEC);
     ASSERT_EQ(ddl.ok(), true);
@@ -25,4 +25,19 @@ TEST(HuffmanEncodeDecode, BasicAssertions)
     decoder.proc();
 }
 
+TEST(Huffman32EncodeDecode, BasicAssertions)
+{
+    // spdlog::set_level(spdlog::level::debug);
+    // data loader
+    DataLoader edl("../res/mock_data", 32, MODE_ENC);
+    ASSERT_EQ(edl.ok(), true);
+    // coder
+    Encoder encoder(&edl, 32, "mock_data.compressed.h32");
+    encoder.proc<uint32_t>();
 
+    DataLoader ddl("mock_data.compressed.h32", 32, MODE_DEC);
+    ASSERT_EQ(ddl.ok(), true);
+
+    Decoder decoder(&ddl, 32, "mock_data.original.h32");
+    decoder.proc<uint32_t>();
+}

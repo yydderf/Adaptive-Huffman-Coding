@@ -4,12 +4,6 @@
 #include <functional>
 #include <spdlog/spdlog.h>
 
-struct StaticNodeDscComp {
-    bool operator()(Node* a, Node* b) const {
-        return a->weight > b->weight;
-    }
-};
-
 void StaticTree::construct(const std::vector<uint32_t> &frequencies) {
     // Priority queue for building the Huffman tree.
     std::priority_queue<Node*, std::vector<Node*>, StaticNodeDscComp> pq;
@@ -26,8 +20,28 @@ void StaticTree::construct(const std::vector<uint32_t> &frequencies) {
             pq.push(leaf);
         }
     }
+    this->_construct(pq);
+}
 
-    // Edge case: if no symbols are present, set root to nullptr.
+void StaticTree::construct(const std::unordered_map<uint32_t, size_t> &frequencies) {
+    std::priority_queue<Node*, std::vector<Node*>, StaticNodeDscComp> pq;
+
+    // Create a leaf for each unique symbol.
+    for (const auto &entry : frequencies) {
+        uint32_t symbol = entry.first;
+        uint32_t freq = entry.second;
+        if (freq > 0) {
+            // Use the symbol value for the node id (or generate a unique id if needed).
+            Node* leaf = new Node(symbol, symbol);
+            leaf->weight = freq;
+            pq.push(leaf);
+        }
+    }
+    this->_construct(pq);
+}
+
+void StaticTree::_construct(std::priority_queue<Node*, std::vector<Node*>, StaticNodeDscComp> &pq)
+{
     if (pq.empty()) {
         spdlog::warn("No symbols with nonzero frequency found.");
         this->root = nullptr;
@@ -68,4 +82,3 @@ void StaticTree::construct(const std::vector<uint32_t> &frequencies) {
     this->root = pq.top();
     this->_get_queue(this->root, nullptr);
 }
-
