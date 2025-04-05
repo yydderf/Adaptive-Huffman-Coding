@@ -20,6 +20,9 @@ DataLoader::DataLoader(const char *ifname, int bits, int mode)
         char tmp_char;
         this->ifs.read(&tmp_char, 1);
         this->padding_size = static_cast<size_t>(tmp_char);
+        if (this->padding_size == 8) {
+            this->padding_size = 0;
+        }
         spdlog::info("Padding size: {}", padding_size);
     } else {
         this->ifs.seekg(0, this->ifs.end);
@@ -82,57 +85,55 @@ std::vector<char> *DataLoader::get(ssize_t nbytes, std::streamsize *read_bytes)
 }
 
 // populate raw block
-std::unique_ptr<RawBlock> DataLoader::next()
-{
-    auto raw_block = std::unique_ptr<RawBlock>(new RawBlock {
-        0, 0, std::vector<uint8_t>(this->read_block_size), std::unordered_map<uint32_t, size_t>()
-    });
-
-    // eof guard
-    if (this->_eof == true) {
-        spdlog::warn("No more data to be read");
-        return nullptr;
-    }
-
-    // proc header for each block
-    if (this->_mode & MODE_DEC) {
-    }
-
-    if (this->_mode & READ_BLOCK) {
-    } else {
-        // populate the buffer entirely
-        // resize the buffer
-        try {
-            raw_block->raw_bytes.resize(this->file_size);
-        } catch (std::bad_alloc const &) {
-            spdlog::error("Not enough memory, try reading the file block by block");
-            return nullptr;
-        }
-        // read from file and write to buffer
-        while (raw_block->size < this->file_size && this->ifs) {
-            this->ifs.read(
-                reinterpret_cast<char*>(raw_block->raw_bytes.data() + raw_block->size),
-                this->read_block_size
-            );
-            std::streamsize nread = this->ifs.gcount();
-            if (nread <= 0) {
-                spdlog::error("Failed to read from file");
-                break;
-            }
-            raw_block->size += nread;
-            spdlog::debug(nread);
-            // spdlog::debug("current size: {}", raw_block->size);
-        }
-    }
-
-    // generate frequency table
-    size_t i;
-    if (this->_bits == 8)  {
-        for (i = 0; i < raw_block->size; ++i) {
-            raw_block->freq_map[raw_block->raw_bytes[i]]++;
-        }
-    }
-
-
-    return raw_block;
-}
+// std::unique_ptr<RawBlock<T>> DataLoader::next()
+// {
+//     auto raw_block = std::unique_ptr<RawBlock<T>>();
+// 
+//     // eof guard
+//     if (this->_eof == true) {
+//         spdlog::warn("No more data to be read");
+//         return nullptr;
+//     }
+// 
+//     // proc header for each block
+//     if (this->_mode & MODE_DEC) {
+//     }
+// 
+//     if (this->_mode & READ_BLOCK) {
+//     } else {
+//         // populate the buffer entirely
+//         // resize the buffer
+//         try {
+//             raw_block->raw_bytes.resize(this->file_size);
+//         } catch (std::bad_alloc const &) {
+//             spdlog::error("Not enough memory, try reading the file block by block");
+//             return nullptr;
+//         }
+//         // read from file and write to buffer
+//         while (raw_block->size < this->file_size && this->ifs) {
+//             this->ifs.read(
+//                 reinterpret_cast<char*>(raw_block->raw_bytes.data() + raw_block->size),
+//                 this->read_block_size
+//             );
+//             std::streamsize nread = this->ifs.gcount();
+//             if (nread <= 0) {
+//                 spdlog::error("Failed to read from file");
+//                 break;
+//             }
+//             raw_block->size += nread;
+//             spdlog::debug(nread);
+//             // spdlog::debug("current size: {}", raw_block->size);
+//         }
+//     }
+// 
+//     // generate frequency table
+//     size_t i;
+//     if (this->_bits == 8)  {
+//         for (i = 0; i < raw_block->size; ++i) {
+//             raw_block->freq_map[raw_block->raw_bytes[i]]++;
+//         }
+//     }
+// 
+// 
+//     return raw_block;
+// }

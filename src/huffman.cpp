@@ -17,7 +17,7 @@
 
 void Encoder::proc() {
     // Read the entire input from the DataLoader.
-    auto raw_block = this->dl->next();
+    auto raw_block = this->dl->next<uint8_t>();
     if (!raw_block) {
         spdlog::error("Failed to read input data");
         return;
@@ -27,7 +27,7 @@ void Encoder::proc() {
     spdlog::warn("Data encode proc started");
     std::vector<uint32_t> frequencies(256, 0);
     for (size_t i = 0; i < raw_block->size; i++) {
-        frequencies[raw_block->raw_bytes[i]]++;
+        frequencies[raw_block->raw_data[i]]++;
     }
     
     // Construct the static Huffman tree.
@@ -60,7 +60,7 @@ void Encoder::proc() {
     boost::dynamic_bitset<> bit_buffer;  // Local bit buffer to accumulate bits.
     
     for (size_t i = 0; i < raw_block->size; i++) {
-        uint8_t symbol = raw_block->raw_bytes[i];
+        uint8_t symbol = raw_block->raw_data[i];
         const std::string &code = code_table[symbol];
         boost::dynamic_bitset<> bits(code.size());
         for (size_t j = 0; j < code.size(); ++j) {
@@ -134,9 +134,11 @@ void Decoder::proc() {
         spdlog::error("Failed to read padding byte.");
         return;
     }
-    if (padding > 7) {
+    if (padding > 8) {
         spdlog::error("Invalid padding value: {}", padding);
         return;
+    } else if (padding == 8) {
+        padding = 0;
     }
     spdlog::warn("padding size: {}", padding);
     size_t valid_bits = total_bits - padding;

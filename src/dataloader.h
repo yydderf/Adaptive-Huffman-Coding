@@ -16,11 +16,12 @@ enum DL_MODE {
     ADAPTIVE   = 1L << 4,
 };
 
+template <typename T>
 struct RawBlock {
     uint8_t tag; // header or data
     size_t size; // size of block
-    std::vector<uint8_t> raw_bytes; // raw data
-    std::unordered_map<uint32_t, size_t> freq_map;
+    std::vector<T> raw_data; // raw data
+    std::unordered_map<T, size_t> freq_map;
 };
 
 class DataLoader {
@@ -28,7 +29,8 @@ public:
     DataLoader(const char *ifname, int bits, int mode);
     bool ok();
     bool eof();
-    std::unique_ptr<RawBlock> next();
+    template <typename T>
+    std::unique_ptr<RawBlock<T>> next();
 
     // populate nbytes
     std::vector<char> *get(ssize_t nbytes, std::streamsize *read_bytes);
@@ -47,5 +49,7 @@ private:
     bool _ok = true;
     bool _eof = false;
 };
+
+#include "dataloader.tpp"
 
 #endif
