@@ -25,6 +25,7 @@ public:
     void update(Node *curr_node, uint32_t symbol);
     void _info(uint32_t *_symbol_size, Node **root);
     void _get_queue(Node *node, std::queue<std::pair<Node *, int>> *rq);
+    boost::dynamic_bitset<> compute_code(Node *node);
     void display();
     void display(Node *node);
     void _switch(Node *node);

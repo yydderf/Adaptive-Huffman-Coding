@@ -85,7 +85,7 @@ void Tree::update(Node *curr_node, uint32_t symbol)
         curr_node->weight += 1;
         this->block_map[curr_node->weight].insert(curr_node);
     }
-    this->_get_queue(this->root, nullptr);
+    // this->_get_queue(this->root, nullptr);
 }
 
 void Tree::_remove_from_set(Node *target_node)
@@ -175,6 +175,21 @@ void Tree::_get_queue(Node *node, std::queue<std::pair<Node *, int>> *rq)
         }
         q.pop();
     }
+}
+
+boost::dynamic_bitset<> Tree::compute_code(Node *node)
+{
+    boost::dynamic_bitset<> code;
+    while (node->parent != nullptr) {
+        code.push_back(node->parent->left == node ? 1 : 0);
+        node = node->parent;
+    }
+    size_t code_size = code.size();
+    boost::dynamic_bitset<> reversed_code(code_size);
+    for(size_t i = 0; i < code_size; ++i) {
+        reversed_code[i] = code[code_size - 1 - i];
+    }
+    return reversed_code;
 }
 
 void Tree::display()

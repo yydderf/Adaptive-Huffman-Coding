@@ -15,12 +15,12 @@ Coder::Coder(DataLoader *dl, int bits, const char *ofname)
 
 void Coder::write_bits(const boost::dynamic_bitset<> &bits)
 {
-    boost::dynamic_bitset<> tmp_repr;
-    std::string repr_buf;
+    // boost::dynamic_bitset<> tmp_repr;
+    // std::string repr_buf;
 
-    boost::to_string(bits, repr_buf);
-    std::reverse(repr_buf.begin(), repr_buf.end());
-    spdlog::info("Encoder write_bits input: {}", repr_buf);
+    // boost::to_string(bits, repr_buf);
+    // std::reverse(repr_buf.begin(), repr_buf.end());
+    // spdlog::info("Encoder write_bits input: {}", repr_buf);
 
     size_t old_size = this->bit_buf.size();
     this->bit_buf.resize(old_size + bits.size());
@@ -33,20 +33,20 @@ void Coder::write_bits(const boost::dynamic_bitset<> &bits)
             byte = (byte << 1) | (this->bit_buf[i] ? 1 : 0);
         }
 
-        tmp_repr = this->bit_buf;
-        tmp_repr.resize(8);
-        boost::to_string(tmp_repr, repr_buf);
-        std::reverse(repr_buf.begin(), repr_buf.end());
-        spdlog::info("Encoder write_bits written: {}", repr_buf);
+        // tmp_repr = this->bit_buf;
+        // tmp_repr.resize(8);
+        // boost::to_string(tmp_repr, repr_buf);
+        // std::reverse(repr_buf.begin(), repr_buf.end());
+        // spdlog::info("Encoder write_bits written: {}", repr_buf);
 
         this->ofs.write(reinterpret_cast<const char*>(&byte), 1);
         erase_left_bits(&(this->bit_buf), 8);
     }
 
-    tmp_repr = this->bit_buf;
-    boost::to_string(tmp_repr, repr_buf);
-    std::reverse(repr_buf.begin(), repr_buf.end());
-    spdlog::info("Encoder write_bits remaining: {}", repr_buf);
+    // tmp_repr = this->bit_buf;
+    // boost::to_string(tmp_repr, repr_buf);
+    // std::reverse(repr_buf.begin(), repr_buf.end());
+    // spdlog::info("Encoder write_bits remaining: {}", repr_buf);
 }
 
 void Coder::flush_bits()
@@ -61,12 +61,12 @@ void Coder::flush_bits()
             byte = (byte << 1) | (this->bit_buf[i] ? 1 : 0);
         }
         this->ofs.write(reinterpret_cast<const char*>(&byte), 1);
-        boost::to_string(this->bit_buf, repr_buf);
-        std::reverse(repr_buf.begin(), repr_buf.end());
-        spdlog::info("Encoder write_bits remaining: {}", repr_buf);
+        // boost::to_string(this->bit_buf, repr_buf);
+        // std::reverse(repr_buf.begin(), repr_buf.end());
+        // spdlog::info("Encoder write_bits remaining: {}", repr_buf);
         this->bit_buf.clear();
     }
-    spdlog::warn("padding size: {}", padding_size);
+    // spdlog::warn("padding size: {}", padding_size);
     this->ofs.write(reinterpret_cast<const char*>(&padding_size), 1);
 }
 

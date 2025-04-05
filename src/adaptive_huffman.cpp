@@ -26,12 +26,12 @@ void Encoder::proc()
             // first appearance
             if (curr_node == nullptr) {
                 Node *node_NYT = this->tree.get_NYT();
-                boost::dynamic_bitset<> NYT_code = node_NYT->repr;
+                boost::dynamic_bitset<> NYT_code = this->tree.compute_code(node_NYT);
                 this->write_bits(NYT_code);
                 boost::dynamic_bitset<> literal = int_to_bitset(symbol, this->bits);
                 this->write_bits(literal);
             } else {
-                boost::dynamic_bitset<> code = curr_node->repr;
+                boost::dynamic_bitset<> code = this->tree.compute_code(curr_node);
                 this->write_bits(code);
             }
             tree.update(curr_node, symbol);

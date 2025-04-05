@@ -12,7 +12,7 @@
 class Encoder: public Coder {
 public:
     Encoder(DataLoader *dl, int bits, const char *ofname) :
-        Coder(dl, bits, ofname), tree(1 << bits)
+        Coder(dl, bits, ofname)
     {
         spdlog::info("Encoder Initialized");
     }
@@ -22,7 +22,7 @@ public:
 class Decoder: public Coder {
 public:
     Decoder(DataLoader *dl, int bits, const char *ofname) :
-        Coder(dl, bits, ofname), tree(1 << bits)
+        Coder(dl, bits, ofname)
     {
         spdlog::info("Decoder Initialized");
     }
