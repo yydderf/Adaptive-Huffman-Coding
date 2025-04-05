@@ -12,16 +12,19 @@ int main(int argc, char **argv)
     spdlog::info("huffman init");
 
     // data loader
-    DataLoader dl(args.ifname, args.bits, READ_ONCE | MODE_ENC);
+    int mode_dec = args.decode ? MODE_DEC : MODE_ENC;
+    DataLoader dl(args.ifname, args.bits, READ_ONCE | mode_dec);
     if (!dl.ok()) {
         return 1;
     }
     // coder
-    Coder coder(&dl, args.bits, args.ofname);
-    coder.proc();
-    // if (!coder.proc()) {
-    //     return 1;
-    // }
+    if (args.decode) {
+        Decoder decoder(&dl, args.bits, args.ofname);
+        decoder.proc();
+    } else {
+        Encoder encoder(&dl, args.bits, args.ofname);
+        encoder.proc();
+    }
 
     return 0;
 }

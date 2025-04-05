@@ -24,6 +24,7 @@ void Encoder::proc() {
     }
     
     // Build a frequency vector for 256 symbols (assume 8-bit symbols).
+    spdlog::warn("Data encode proc started");
     std::vector<uint32_t> frequencies(256, 0);
     for (size_t i = 0; i < raw_block->size; i++) {
         frequencies[raw_block->raw_bytes[i]]++;
@@ -72,11 +73,12 @@ void Encoder::proc() {
     this->flush_bits();
     ofs.flush();
     
-    spdlog::info("Static Huffman encoding complete.");
+    spdlog::warn("Data encode proc ended");
+    // spdlog::info("Static Huffman encoding complete.");
 }
 
 void Decoder::proc() {
-    spdlog::info("Decoder proc starting.");
+    spdlog::warn("Data decoding proc started");
     const size_t num_symbols = 256;
     const size_t header_bytes = num_symbols * sizeof(uint32_t); // 1024 bytes
     std::vector<uint32_t> frequencies(num_symbols, 0);
@@ -160,6 +162,6 @@ void Decoder::proc() {
         }
     }
     ofs.flush();
-    spdlog::info("Decoding complete.");
+    spdlog::warn("Data decoding proc ended");
 }
 

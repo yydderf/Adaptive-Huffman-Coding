@@ -1,4 +1,5 @@
 build/
 res/alexnet.pth
 alexnet*
-out
+out/
+venv/
