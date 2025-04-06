@@ -148,6 +148,9 @@ inline void Encoder::proc<uint32_t>()
     this->flush_bits();
     coded_symbols += 1;
     std::cout << "coded symbols: " << coded_symbols << std::endl;
+
+    uint8_t last_unit_size = this->dl->file_size % 4;
+    this->ofs.write(reinterpret_cast<const char*>(&last_unit_size), 1);
     ofs.flush();
     
     spdlog::warn("Data encode proc ended");
@@ -313,7 +316,8 @@ inline void Decoder::proc<uint32_t>()
         return;
     }
     // The last byte is used for the number of valid bits in the final encoded byte.
-    size_t encoded_data_bytes = file_size - header_size - 1;
+    // -2 for padding_size and last_unit_size {0, 1, 2, 3}
+    size_t encoded_data_bytes = file_size - header_size - 2;
     spdlog::info("filesize: {}, headersize: {}", file_size, header_size);
     
     std::vector<uint8_t> encoded_data;
@@ -340,6 +344,17 @@ inline void Decoder::proc<uint32_t>()
         padding_size = 0;
     }
     spdlog::warn("padding_size: {}", padding_size);
+    uint8_t last_unit_size;
+    if (!read_byte(last_unit_size)) {
+        spdlog::error("Error reading last-unit-size byte.");
+        return;
+    }
+    if (last_unit_size > 3) { // padding_size is number of padded bits (0 to 31)
+        spdlog::error("Invalid last-unit-size value: {}", last_unit_size);
+        return;
+    } else if (last_unit_size == 0) {
+        last_unit_size = 4;
+    }
     // if (padding_size > 32) {
     //     spdlog::error("Invalid padding value: {}", padding_size);
     //     return;
@@ -374,7 +389,7 @@ inline void Decoder::proc<uint32_t>()
     size_t tmp_tot = total_units * 32;
     int shl = 32;
     uint32_t word = 0;
-    // std::cout << "offset: " << offset << ", encoded_data size: " << encoded_data.size() << std::endl;
+    std::cout << "offset: " << offset << ", encoded_data size: " << encoded_data.size() << std::endl;
     while (tmp_tot < total_bits) {
         shl -= 8;
         word |= (static_cast<uint32_t>(encoded_data[offset++]) << shl);
@@ -390,25 +405,27 @@ inline void Decoder::proc<uint32_t>()
     
     // --- Step 6: Decode the bitstream ---
     Node* current = root;
-    size_t coded_symbols = 0;
     size_t i = 0;
+    uint32_t symbol;
     code_str = "";
     for (i = 0; i < valid_bits; i++) {
         bool bit = encodedBits[i];
         current = bit ? current->right : current->left;
         code_str += (bit ? '1' : '0');
         if (current->external()) {
-            uint32_t symbol = current->symbol;
+            symbol = current->symbol;
             // std::cout << "symbol: " << std::hex << symbol << ", code: " << code_str << std::endl;
-            coded_symbols += 1;
-            ofs.write(reinterpret_cast<const char*>(&symbol), sizeof(symbol));
+            if (i == valid_bits - 1) {
+                ofs.write(reinterpret_cast<const char*>(&symbol), static_cast<int>(last_unit_size));
+            } else {
+                ofs.write(reinterpret_cast<const char*>(&symbol), sizeof(symbol));
+            }
             spdlog::info("Decoded symbol: {}", symbol);
             current = root;
             code_str = "";
         }
     }
-    // std::cout << "coded_symbols: " << coded_symbols << std::endl;
-    // std::cout << valid_bits << " " << encodedBits.size() << std::endl;
+    std::cout << std::hex << symbol << ", code: " << code_str << std::endl;
     ofs.flush();
     spdlog::warn("Data decoding proc ended (32-bit mode).");
 }

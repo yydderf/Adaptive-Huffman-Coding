@@ -1,12 +1,13 @@
 #!/bin/bash
-if [ "$#" -ne 2 ]; then
-    echo "Usage: $0 <binary> <target_file>"
+if [ "$#" -lt 2 ]; then
+    echo "Usage: $0 <binary> <target_file> (<bits>)"
     exit 1
 fi
 
 binary="$1"
 binary_base=$(basename $binary)
 input_file="$2"
+bits="${3:-8}"
 
 base=$(basename "$input_file")
 base="${base%.*}"
@@ -16,7 +17,11 @@ target="${out_dir}/${base}"
 ext=""
 
 if [ "$binary_base" == "huffman_main" ]; then
-    ext=".h"
+    if [ "$bits" == "32" ]; then
+        ext=".h32"
+    else
+        ext=".h"
+    fi
 elif [ "$binary_base" == "adaptive_huffman_main" ]; then
     ext=".a"
 else
@@ -28,14 +33,14 @@ target_compressed="${target}.compressed${ext}"
 target_original="${target}.original${ext}"
 
 echo "Encoding file..."
-./"$binary" -i "$input_file" -o "$target_compressed" -v w
+./"$binary" -i "$input_file" -o "$target_compressed" -v w -b "$bits"
 if [ $? -ne 0 ]; then
     echo "Encoding failed."
     exit 1
 fi
 
 echo "Decoding file..."
-./"$binary" -i "$target_compressed" -o "$target_original" -v w -d
+./"$binary" -i "$target_compressed" -o "$target_original" -v w -d -b "$bits"
 if [ $? -ne 0 ]; then
     echo "Decoding failed."
     exit 1
