@@ -41,7 +41,7 @@ inline void Encoder::proc<uint8_t>()
     
     // Generate the code table by traversing the tree.
     // We'll map symbol (uint32_t) -> its Huffman code (string of '0' and '1').
-    std::unordered_map<uint32_t, std::string> code_table;
+    std::map<uint32_t, std::string> code_table;
     std::function<void(Node*, const std::string&)> traverse =
         [&](Node* node, const std::string& code) {
             // A leaf node: assume a leaf is one with no children.
@@ -94,12 +94,13 @@ inline void Encoder::proc<uint32_t>()
     }
     
     // Create frequency map from the 32-bit words.
-    std::unordered_map<uint32_t, size_t> frequencies = raw_block->freq_map;
+    std::map<uint32_t, size_t> frequencies = raw_block->freq_map;
     
     // Write header:
     // First, write the number of unique symbols.
     uint32_t unique_count = frequencies.size();
     ofs.write(reinterpret_cast<const char*>(&unique_count), sizeof(unique_count));
+    spdlog::info("unique count: {}", static_cast<int>(unique_count));
     
     // Then, write each unique symbol and its frequency.
     for (const auto &entry : frequencies) {
@@ -114,7 +115,7 @@ inline void Encoder::proc<uint32_t>()
     tree.construct(frequencies);
     
     // Generate the code table by traversing the tree.
-    std::unordered_map<uint32_t, std::string> code_table;
+    std::map<uint32_t, std::string> code_table;
     std::function<void(Node*, const std::string&)> traverse =
         [&](Node* node, const std::string& code) {
             if (!node->left && !node->right) {
@@ -129,19 +130,24 @@ inline void Encoder::proc<uint32_t>()
     traverse(tree.get_root(), "");
     
     // Encode the input data (32-bit words).
-    for (size_t i = 0; i < raw_block->size; i++) {
+    size_t coded_symbols = 0;
+    for (size_t i = 0; i < raw_block->size; ++i) {
         uint32_t symbol = raw_block->raw_data[i];
         const std::string &code = code_table[symbol];
+        // std::cout << "symbol: " << std::hex << symbol << ", code: " << code << std::endl;
         boost::dynamic_bitset<> bits(code.size());
         for (size_t j = 0; j < code.size(); ++j) {
             bits[j] = (code[j] == '1');
         }
-        spdlog::info("symbol: {}, code: {}", symbol, code);
         this->write_bits(bits);
+        coded_symbols += 1;
     }
     
     // Flush any remaining bits.
+    // this->flush_bits_32();
     this->flush_bits();
+    coded_symbols += 1;
+    std::cout << "coded symbols: " << coded_symbols << std::endl;
     ofs.flush();
     
     spdlog::warn("Data encode proc ended");
@@ -218,7 +224,6 @@ inline void Decoder::proc<uint8_t>()
                  encoded_data_bytes, total_bits, valid_bits);
 
     // Step 6: Decode the bitstream.
-    tree.display();
     std::string repr_buf;
     boost::to_string(encoded_bits, repr_buf);
     spdlog::info("Decoder repr: {}", repr_buf);
@@ -259,12 +264,12 @@ inline void Decoder::proc<uint32_t>()
         }
         unique_count |= (static_cast<uint32_t>(byte) << (8 * i));
     }
+    spdlog::info("Unique count: {}", static_cast<int>(unique_count));
     uint32_t header_size = 4;
-    spdlog::info("Unique count: {}", unique_count);
 
     // Now, read unique_count entries (each: 4 bytes for symbol, 4 bytes for frequency).
-    std::unordered_map<uint32_t, size_t> frequencies;
-    for (uint32_t i = 0; i < unique_count; i++) {
+    std::map<uint32_t, size_t> frequencies;
+    for (uint32_t i = 0; i < unique_count; ++i) {
         uint32_t symbol = 0;
         uint32_t freq = 0;
         // Read symbol (4 bytes).
@@ -293,6 +298,7 @@ inline void Decoder::proc<uint32_t>()
     // --- Step 2: Reconstruct the Huffman tree ---
     StaticTree tree(unique_count);
     tree.construct(frequencies);
+
     Node* root = tree.get_root();
     if (root == nullptr) {
         spdlog::error("Failed to construct Huffman tree.");
@@ -308,10 +314,11 @@ inline void Decoder::proc<uint32_t>()
     }
     // The last byte is used for the number of valid bits in the final encoded byte.
     size_t encoded_data_bytes = file_size - header_size - 1;
+    spdlog::info("filesize: {}, headersize: {}", file_size, header_size);
     
     std::vector<uint8_t> encoded_data;
     encoded_data.reserve(encoded_data_bytes);
-    for (size_t i = 0; i < encoded_data_bytes; i++) {
+    for (size_t i = 0; i < encoded_data_bytes; ++i) {
         uint8_t byte;
         if (!read_byte(byte)) {
             spdlog::error("Error reading encoded data byte at index {}.", i);
@@ -321,65 +328,89 @@ inline void Decoder::proc<uint32_t>()
     }
     
     // Read final padding-validity byte.
-    uint8_t valid_last = 0;
-    if (!read_byte(valid_last)) {
+    uint8_t padding_size = 0;
+    if (!read_byte(padding_size)) {
         spdlog::error("Error reading padding-validity byte.");
         return;
     }
-    if (valid_last > 8) {
-        spdlog::error("Invalid padding value: {}", valid_last);
+    if (padding_size > 8) { // padding_size is number of padded bits (0 to 31)
+        spdlog::error("Invalid padding value: {}", padding_size);
         return;
+    } else if (padding_size == 8) {
+        padding_size = 0;
     }
+    spdlog::warn("padding_size: {}", padding_size);
+    // if (padding_size > 32) {
+    //     spdlog::error("Invalid padding value: {}", padding_size);
+    //     return;
+    // } else if (padding_size == 32) {
+    //     padding_size = 0;
+    // }
     
-    // --- Step 4: Convert encoded data to bitset ---
-    // All bytes except the last are fully valid.
-    // size_t full_bytes = (encoded_data_bytes > 0) ? (encoded_data_bytes - 1) : 0;
-    // size_t valid_bits = full_bytes * 8 + valid_last;
-    size_t full_bytes;
-    size_t valid_bits;
-    if (valid_last == 0) {
-        valid_bits = encoded_data_bytes * 8;
-        full_bytes = encoded_data_bytes;
-    } else {
-        valid_bits = (encoded_data_bytes - 1) * 8 + valid_last;
-        full_bytes = encoded_data_bytes - 1;
-    }
-    spdlog::info("Encoded data: {} bytes, valid bits: {}", encoded_data_bytes, valid_bits);
-    
+    size_t total_bits = encoded_data_bytes * 8;
+    size_t valid_bits = total_bits - padding_size;
+    spdlog::warn("Encoded data: {} bytes, total bits: {}, valid bits: {}",
+                 encoded_data_bytes, total_bits, valid_bits);
+
+    // --- Step 5: Convert encoded data to dynamic bitset ---
     boost::dynamic_bitset<> encodedBits(valid_bits);
     size_t bit_index = 0;
-    // Process each full byte.
-    for (size_t i = 0; i < full_bytes; i++) {
-        for (int bit = 7; bit >= 0; bit--) {
-            bool b = ((encoded_data[i] >> bit) & 1);
+    size_t total_units = encoded_data_bytes / 4;
+    size_t unit;
+    std::cout << "total units: " << total_units << std::endl;
+    for (unit = 0; unit < total_units; unit++) {
+        size_t offset = unit * 4;
+        // Combine 4 bytes into a 32-bit word (assuming big-endian bit order within the word).
+        uint32_t word = (static_cast<uint32_t>(encoded_data[offset]) << 24) |
+                        (static_cast<uint32_t>(encoded_data[offset+1]) << 16) |
+                        (static_cast<uint32_t>(encoded_data[offset+2]) << 8) |
+                        (static_cast<uint32_t>(encoded_data[offset+3]));
+        for (int bit = 31; bit >= 0; bit--) {
+            bool b = ((word >> bit) & 1);
             encodedBits[bit_index++] = b;
         }
     }
-    // Process the final (possibly partial) byte.
-    if (encoded_data_bytes > 0) {
-        uint8_t last_byte = encoded_data.back();
-        for (int bit = 7; bit > 7 - static_cast<int>(valid_last); bit--) {
-            bool b = ((last_byte >> bit) & 1);
-            encodedBits[bit_index++] = b;
-        }
+    size_t offset = unit * 4;
+    size_t tmp_tot = total_units * 32;
+    int shl = 32;
+    uint32_t word = 0;
+    // std::cout << "offset: " << offset << ", encoded_data size: " << encoded_data.size() << std::endl;
+    while (tmp_tot < total_bits) {
+        shl -= 8;
+        word |= (static_cast<uint32_t>(encoded_data[offset++]) << shl);
+        tmp_tot += 8;
     }
+    std::string code_str = "";
+    for (int bit = 31; bit >= shl + padding_size; bit--) {
+        bool b = ((word >> bit) & 1);
+        code_str += (b ? '1' : '0');
+        encodedBits[bit_index++] = b;
+    }
+    std::cout << code_str << std::endl;
     
-    // --- Step 5: Decode the bitstream ---
+    // --- Step 6: Decode the bitstream ---
     Node* current = root;
-    spdlog::info("valid_bits: {}", valid_bits);
-    for (size_t i = 0; i < valid_bits; i++) {
+    size_t coded_symbols = 0;
+    size_t i = 0;
+    code_str = "";
+    for (i = 0; i < valid_bits; i++) {
         bool bit = encodedBits[i];
         current = bit ? current->right : current->left;
+        code_str += (bit ? '1' : '0');
         if (current->external()) {
-            // For 32-bit mode, write the symbol as 4 bytes.
             uint32_t symbol = current->symbol;
+            // std::cout << "symbol: " << std::hex << symbol << ", code: " << code_str << std::endl;
+            coded_symbols += 1;
             ofs.write(reinterpret_cast<const char*>(&symbol), sizeof(symbol));
-            spdlog::info("symbol: {}", symbol);
+            spdlog::info("Decoded symbol: {}", symbol);
             current = root;
+            code_str = "";
         }
     }
+    // std::cout << "coded_symbols: " << coded_symbols << std::endl;
+    // std::cout << valid_bits << " " << encodedBits.size() << std::endl;
     ofs.flush();
-    spdlog::warn("Data decoding proc ended");
+    spdlog::warn("Data decoding proc ended (32-bit mode).");
 }
 
 #endif

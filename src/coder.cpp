@@ -54,8 +54,8 @@ void Coder::flush_bits()
     std::string repr_buf;
     uint8_t padding_size = 8 - static_cast<uint8_t>(this->bit_buf.size());
     if (this->bit_buf.size() > 0) {
-        // size_t remaining = this->bit_buf.size();
         this->bit_buf.resize(8);
+        // size_t remaining = this->bit_buf.size();
         uint8_t byte = 0;
         for (size_t i = 0; i < 8; ++i) {
             byte = (byte << 1) | (this->bit_buf[i] ? 1 : 0);
@@ -64,6 +64,27 @@ void Coder::flush_bits()
         // boost::to_string(this->bit_buf, repr_buf);
         // std::reverse(repr_buf.begin(), repr_buf.end());
         // spdlog::info("Encoder write_bits remaining: {}", repr_buf);
+        this->bit_buf.clear();
+    }
+    // spdlog::warn("padding size: {}", padding_size);
+    this->ofs.write(reinterpret_cast<const char*>(&padding_size), 1);
+}
+
+void Coder::flush_bits_32()
+{
+    std::string repr_buf;
+    uint8_t padding_size = 32 - static_cast<uint8_t>(this->bit_buf.size());
+    boost::to_string(this->bit_buf, repr_buf);
+    std::reverse(repr_buf.begin(), repr_buf.end());
+    spdlog::warn("Encoder write_bits remaining: {}", repr_buf);
+    if (this->bit_buf.size() > 0) {
+        this->bit_buf.resize(32);
+        // size_t remaining = this->bit_buf.size();
+        uint32_t byte = 0;
+        for (size_t i = 0; i < 32; ++i) {
+            byte = (byte << 1) | (this->bit_buf[i] ? 1 : 0);
+        }
+        this->ofs.write(reinterpret_cast<const char*>(&byte), 4);
         this->bit_buf.clear();
     }
     // spdlog::warn("padding size: {}", padding_size);

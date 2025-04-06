@@ -3,6 +3,9 @@
 #include <queue>
 #include <functional>
 #include <spdlog/spdlog.h>
+#include <iostream>
+#include <algorithm>
+#include <map>
 
 void StaticTree::construct(const std::vector<uint32_t> &frequencies) {
     // Priority queue for building the Huffman tree.
@@ -23,7 +26,7 @@ void StaticTree::construct(const std::vector<uint32_t> &frequencies) {
     this->_construct(pq);
 }
 
-void StaticTree::construct(const std::unordered_map<uint32_t, size_t> &frequencies) {
+void StaticTree::construct(const std::map<uint32_t, size_t> &frequencies) {
     std::priority_queue<Node*, std::vector<Node*>, StaticNodeDscComp> pq;
 
     // Create a leaf for each unique symbol.

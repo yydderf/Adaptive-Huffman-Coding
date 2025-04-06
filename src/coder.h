@@ -18,6 +18,7 @@ protected:
     boost::dynamic_bitset<> bit_buf;
     void write_bits(const boost::dynamic_bitset<> &bits);
     void flush_bits();
+    void flush_bits_32();
 
     bool read_bit(bool &bit);
     boost::dynamic_bitset<> read_bits(int n);

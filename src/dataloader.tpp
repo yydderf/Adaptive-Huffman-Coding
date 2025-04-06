@@ -14,7 +14,8 @@ std::unique_ptr<RawBlock<T>> DataLoader::next() {
 
     // Calculate how many elements of type T can be read.
     size_t element_size = sizeof(T);
-    size_t num_elements = this->file_size / element_size;
+    size_t num_elements = std::ceil(this->file_size / static_cast<double>(element_size));
+    spdlog::info("file_size: {}, element_size: {}, num_elements: {}", this->file_size, element_size, num_elements);
 
     // Resize the vector to hold the elements.
     try {
@@ -29,7 +30,7 @@ std::unique_ptr<RawBlock<T>> DataLoader::next() {
     std::streamsize bytes_read = this->ifs.gcount();
 
     // Update the number of elements actually read.
-    raw_block->size = bytes_read / element_size;
+    raw_block->size = std::ceil(bytes_read / static_cast<double>(element_size));
 
     // Generate frequency table.
     for (size_t i = 0; i < raw_block->size; ++i) {

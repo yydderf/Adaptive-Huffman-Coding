@@ -2,6 +2,7 @@
 #define _DATALOADER_H
 
 #include <unordered_map>
+#include <map>
 #include <fstream>
 #include <cstdint>
 #include <memory>
@@ -21,7 +22,7 @@ struct RawBlock {
     uint8_t tag; // header or data
     size_t size; // size of block
     std::vector<T> raw_data; // raw data
-    std::unordered_map<T, size_t> freq_map;
+    std::map<T, size_t> freq_map;
 };
 
 class DataLoader {
