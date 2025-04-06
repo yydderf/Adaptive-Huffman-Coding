@@ -188,6 +188,10 @@ target_link_libraries(adaptive_huffman_test
     spdlog::spdlog
 )
 
+add_dependencies(dataloader_test spdlog::spdlog Boost::boost)
+add_dependencies(huffman_test spdlog::spdlog Boost::boost)
+add_dependencies(adaptive_huffman_test spdlog::spdlog Boost::boost)
+
 include(GoogleTest)
 gtest_discover_tests(tree_test)
 

@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <queue>
 #include <boost/dynamic_bitset.hpp>
+#include <unordered_map>
 #include <set>
 
 #include "node.h"
